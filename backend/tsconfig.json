@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "dist",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": "..",
+    "paths": {
+      "@3dil-routeros/shared": ["shared/src/index.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}

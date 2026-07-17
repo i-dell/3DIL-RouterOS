@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowJs": false,
+    "baseUrl": "..",
+    "paths": {
+      "@3dil-routeros/shared": ["shared/src/index.ts"]
+    },
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"],
+  "references": [{ "path": "../shared" }]
+}
