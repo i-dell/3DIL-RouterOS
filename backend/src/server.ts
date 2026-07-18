@@ -10,6 +10,8 @@ import { createRouterApi } from './routes.js';
 import { PollingService } from './polling.js';
 import { attachWebsocket } from './websocket.js';
 import {NetworkHistoryStore} from './network/history.js';
+import {SecurityStore} from './security/security-store.js';
+import {calculateSecurityScore} from './security/security-center.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -41,7 +43,8 @@ const db = createDatabase();
 void db.init();
 const pollingService = new PollingService(undefined,db);
 const networkHistory=new NetworkHistoryStore();void networkHistory.init();pollingService.on('snapshot',snapshot=>void networkHistory.record(snapshot));
-app.use(createRouterApi(pollingService,db,networkHistory));
+const securityStore=new SecurityStore();void securityStore.init();pollingService.on('snapshot',snapshot=>{const score=calculateSecurityScore(snapshot);void securityStore.recordScore(snapshot.timestamp,score.score,score.verifiedControls,score.confidence);pollingService.emit('security.score.updated',{score:score.score,verifiedControls:score.verifiedControls,confidence:score.confidence,timestamp:snapshot.timestamp})});
+app.use(createRouterApi(pollingService,db,networkHistory,securityStore));
 
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 attachWebsocket(wss, pollingService);

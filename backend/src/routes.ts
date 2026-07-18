@@ -6,8 +6,10 @@ import { createCapabilities } from './capabilities.js';
 import type {RouterDatabase} from './storage.js';
 import {networkModules,readNetworkModule} from './network/index.js';
 import type {NetworkHistoryStore} from './network/history.js';
+import {calculateSecurityScore,securityCapabilities,securityFindings,securityModule,securityOverview,securityRecommendations} from './security/security-center.js';
+import type {SecurityStore} from './security/security-store.js';
 
-export const createRouterApi=(service:PollingService,database:RouterDatabase,networkHistory:NetworkHistoryStore)=>{const router=Router(),config=getRouterRuntimeConfig(); const snapshot=(_req:unknown,res:Response)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s)};
+export const createRouterApi=(service:PollingService,database:RouterDatabase,networkHistory:NetworkHistoryStore,securityStore:SecurityStore)=>{const router=Router(),config=getRouterRuntimeConfig(); const snapshot=(_req:unknown,res:Response)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s)};
  router.get('/api/v1/router/snapshot',snapshot);router.get('/api/router/snapshot',snapshot);
  for(const [path,key] of [['device-info','deviceInfo'],['health','health'],['wan','wan'],['wifi','wifi'],['security','security']] as const)router.get(`/api/v1/router/${path}`,(_q,res)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s[key])});
  router.get('/api/v1/router/devices',async(_q,res)=>{const inventory=await service.getInventory();if(!inventory)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(inventory)});
@@ -17,6 +19,14 @@ export const createRouterApi=(service:PollingService,database:RouterDatabase,net
  for(const module of networkModules)router.get(`/api/v1/network/${module}`,(_q,res)=>{let routerIp=config.baseUrl;try{routerIp=new URL(config.baseUrl).hostname}catch{/* configured value retained */}res.json(readNetworkModule(module,service.getSnapshot(),routerIp))});
  router.get('/api/v1/network/:module/history',async(req,res)=>res.json(await networkHistory.history(req.params.module)));
  router.patch('/api/v1/network/:module',(_q,res)=>res.status(501).json({supported:false,reason:'Not supported by current firmware',requiresConfirmation:true}));
+ router.get('/api/v1/security/capabilities',(_q,res)=>res.json(securityCapabilities(service.getSnapshot())));
+ router.get('/api/v1/security/overview',(_q,res)=>res.json(securityOverview(service.getSnapshot())));
+ router.get('/api/v1/security/score',(_q,res)=>res.json(calculateSecurityScore(service.getSnapshot())));
+ router.get('/api/v1/security/findings',(_q,res)=>res.json(securityFindings(service.getSnapshot())));
+ router.get('/api/v1/security/recommendations',(_q,res)=>res.json(securityRecommendations(service.getSnapshot())));
+ for(const module of ['firewall','access-control','mac-filter','parental-control','content-filter','dns','wifi','hardening','alerts','events','audit'])router.get(`/api/v1/security/${module}`,async(_q,res)=>{if(module==='audit')return res.json({module,supported:true,writeSupported:false,verified:true,reason:null,data:{items:await securityStore.audit()}});res.json(securityModule(module,service.getSnapshot()))});
+ router.get('/api/v1/security/firewall/rules',(_q,res)=>res.json({supported:false,verified:false,writeSupported:false,reason:'Feature support has not been verified',items:[]}));
+ router.get('/api/v1/security/history',async(_q,res)=>res.json({module:'history',supported:true,verified:true,writeSupported:false,reason:null,lastVerified:service.getSnapshot()?.timestamp??null,data:{items:await securityStore.history()}}));
  router.post('/api/v1/router/auth',async(req,res)=>{const {username,password}=req.body as {username?:string,password?:string};if(!username||!password)return res.status(400).json({status:'failed',reason:'Username and password required'});try{await service.start(username,password);res.json({status:'connected',reason:null})}catch(e){const m=e instanceof Error?e.message:'Authentication failed';res.status(/protocol/i.test(m)?409:401).json({status:/protocol/i.test(m)?'protocol-mismatch':'failed',reason:m})}});
  router.post('/api/v1/router/refresh',async(_q,res)=>{try{res.json(await service.refresh())}catch(e){res.status(503).json({reason:e instanceof Error?e.message:'Refresh failed'})}});
  router.post('/api/v1/router/logout',(_q,res)=>{service.stop();res.json({status:'disconnected'})});
