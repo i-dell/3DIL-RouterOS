@@ -158,7 +158,7 @@ export const LoginPage = () => {
           setMessage('The session has expired. Please reconnect.');
         } else {
           setStatus('authentication-failed');
-          setMessage('Authentication failed. Please verify the router credentials.');
+          setMessage(String(reason));
         }
       } else {
         setStatus('backend-offline');

@@ -11,3 +11,4 @@ export interface RouterSnapshot {
   security: SupportMeta & { firewall:boolean|null; macFilter:boolean|null; dmz:boolean|null; upnp:boolean|null };
 }
 export interface SafeDiagnostic { stage:string; endpoint:string|null; httpStatus:number|null; contentType:string|null; responseLength:number|null; authenticated:boolean; reason:string|null; parserName:string|null; lastPollTime:string|null }
+export interface AuthDiagnosticStage { stage:string; endpoint:string; method:string; httpStatus:number|null; cookiesReceived:number; cookiesStored:number; redirectTarget:string|null; authenticated:boolean; reason:string|null; timestamp:string }

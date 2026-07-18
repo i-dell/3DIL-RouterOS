@@ -1,7 +1,8 @@
-import assert from 'node:assert/strict';import test from 'node:test';import {constructorRows,isLoginPage,parseDeviceInfo,parseDevices,parseWan,parseWifi,splitSetCookie,verifyProtectedResponse} from '../src/drivers/huawei.js';
+import assert from 'node:assert/strict';import test from 'node:test';import {constructorRows,encodeHuaweiPassword,isLoginPage,parseCookiePair,parseDeviceInfo,parseDevices,parseWan,parseWifi,verifyProtectedResponse} from '../src/drivers/huawei.js';
 test('HAR login success requires protected marker',()=>assert.equal(verifyProtectedResponse(200,'<script src="/html/bbsp/common/getWanDynamicData.asp"></script>'),true));
 test('login failure page is detected after false HTTP 200',()=>{assert.equal(isLoginPage('<form action="/login.cgi"><input name="UserName"></form>'),true);assert.equal(verifyProtectedResponse(200,'<form action="/login.cgi"><input name="UserName"></form>'),false)});
-test('cookies preserve Expires commas',()=>assert.deepEqual(splitSetCookie('SID=one; Expires=Wed, 21 Oct 2030 07:28:00 GMT, TOKEN=two; Path=/'),['SID=one; Expires=Wed, 21 Oct 2030 07:28:00 GMT','TOKEN=two; Path=/']));
+test('independent Set-Cookie preserves Expires commas',()=>assert.deepEqual(parseCookiePair('SID=one; Expires=Wed, 21 Oct 2030 07:28:00 GMT'),['SID','one']));
+test('Huawei password encoding matches firmware Base64 without padding',()=>assert.equal(encodeHuaweiPassword('1234567890'),'MTIzNDU2Nzg5MA'));
 test('controlled constructor tokenizer',()=>assert.deepEqual(constructorRows(`new X('a,b','c')`,'X'),[['a,b','c']]));
 test('device info parser',()=>{const x=parseDeviceInfo(`var x=new stDeviceInfo('d','SER','HW','FW','MODEL','','','','','','','');`);assert.equal(x.model,'MODEL');assert.equal(x.firmware,'FW')});
 test('device parser',()=>{const x=parseDevices(`new USERDevice('d','192.0.2.2','AA-BB-CC-DD-EE-FF','SSID1','x','x','1','WiFi','42','phone','1','0','x','My Phone','x','10')`);assert.equal(x.items[0].mac,'AA:BB:CC:DD:EE:FF');assert.equal(x.items[0].online,true)});
