@@ -110,7 +110,18 @@ export const LoginPage = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
+    const formData = new FormData(event.currentTarget);
+    const submittedUsername = String(formData.get('username') ?? '').trim();
+    const submittedPassword = String(formData.get('password') ?? '');
+
+    if (submittedUsername !== username) {
+      setUsername(submittedUsername);
+    }
+    if (submittedPassword !== password) {
+      setPassword(submittedPassword);
+    }
+
+    if (!submittedUsername || !submittedPassword) {
       setStatus('authentication-failed');
       setMessage('Router username and router password are required.');
       return;
@@ -120,7 +131,10 @@ export const LoginPage = () => {
     setMessage('Authenticating with the router…');
 
     try {
-      const response = await axios.post('/api/v1/router/auth', { username, password });
+      const response = await axios.post('/api/v1/router/auth', {
+        username: submittedUsername,
+        password: submittedPassword,
+      });
       if (response.status === 200 || response.data?.status === 'connected') {
         setStatus('success');
         setMessage('Connection established. Opening the dashboard…');
@@ -223,22 +237,33 @@ export const LoginPage = () => {
               </div>
 
               <div className="mt-6 space-y-4">
-                <label className="block">
-                  <span className="mb-2 block text-sm text-[#8ca78f]">Router Username</span>
+                <div className="block">
+                  <label htmlFor="router-username" className="mb-2 block text-sm text-[#8ca78f]">
+                    Router Username
+                  </label>
                   <input
+                    id="router-username"
+                    name="username"
                     type="text"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     className="w-full rounded-2xl border border-emerald-800/50 bg-[#07120d] px-4 py-3 text-sm text-[#f7fff8] outline-none transition focus:border-emerald-500"
                     autoComplete="username"
-                    placeholder="admin"
+                    placeholder="Router username"
+                    spellCheck={false}
+                    autoCapitalize="none"
+                    dir="ltr"
                   />
-                </label>
+                </div>
 
-                <label className="block">
-                  <span className="mb-2 block text-sm text-[#8ca78f]">Router Password</span>
+                <div className="block">
+                  <label htmlFor="router-password" className="mb-2 block text-sm text-[#8ca78f]">
+                    Router Password
+                  </label>
                   <div className="flex items-center rounded-2xl border border-emerald-800/50 bg-[#07120d] px-4 py-3">
                     <input
+                      id="router-password"
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
@@ -250,7 +275,7 @@ export const LoginPage = () => {
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
-                </label>
+                </div>
 
                 <label className="flex items-center gap-2 text-sm text-[#8ca78f]">
                   <input type="checkbox" checked={rememberUsername} onChange={() => setRememberUsername((value) => !value)} className="rounded border-emerald-700 bg-transparent" />
