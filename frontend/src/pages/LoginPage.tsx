@@ -314,7 +314,7 @@ export const LoginPage = () => {
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <span>{snapshot.data?.deviceInfo.model??'Huawei router'}</span>
                   <span>Version</span>
-                  <span>v2.0.0</span>
+                  <span>v4.0.0 · Version 4</span>
                 </div>
               </div>
             </motion.form>

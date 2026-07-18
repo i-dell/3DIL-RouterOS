@@ -4,6 +4,7 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { DevicesPage } from './pages/DevicesPage.js';import { WifiPage } from './pages/WifiPage.js';import { WanPage } from './pages/WanPage.js';import { SecurityPage } from './pages/SecurityPage.js';import { SettingsPage } from './pages/SettingsPage.js';import { LogsPage } from './pages/LogsPage.js';
 import { AboutPage } from './pages/AboutPage.js';
+import { CapabilityPage, features } from './pages/CapabilityPage.js';
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/logs" element={<LogsPage />} />
         <Route path="/about" element={<AboutPage />} />
+        {features.map(feature=><Route key={feature.path} path={feature.path} element={<CapabilityPage feature={feature}/>}/>)}
       </Route>
     </Routes>
   );

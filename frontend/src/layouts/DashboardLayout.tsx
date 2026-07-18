@@ -8,19 +8,18 @@ import type { Diagnostics } from '../pages/routerTypes.js';
 interface SidebarItem {
   to: string;
   label: string;
-  icon: string;
+  english: string;
+  group: string;
 }
 
 const sidebarItems: SidebarItem[] = [
-  { to: '/dashboard', label: 'لوحة التحكم', icon: '◉' },
-  { to: '/devices', label: 'الأجهزة', icon: '◌' },
-  { to: '/wifi', label: 'Wi-Fi', icon: '◍' },
-  { to: '/wan', label: 'الإنترنت', icon: '◐' },
-  { to: '/security', label: 'الأمان', icon: '◑' },
-  { to: '/settings', label: 'الإعدادات', icon: '◒' },
-  { to: '/logs', label: 'السجل', icon: '≡' },
-  { to: '/about', label: 'حول', icon: 'ⓘ' },
+  {to:'/overview',label:'نظرة عامة',english:'Overview',group:'عام'},{to:'/dashboard',label:'لوحة التحكم',english:'Dashboard',group:'عام'},{to:'/quick-setup',label:'الإعدادات السريعة',english:'Quick Setup',group:'عام'},
+  {to:'/network-status',label:'حالة الشبكة',english:'Network Status',group:'الشبكة'},{to:'/wifi',label:'الشبكة اللاسلكية',english:'Wi-Fi Settings',group:'الشبكة'},{to:'/guest-wifi',label:'شبكة الضيوف',english:'Guest Network',group:'الشبكة'},{to:'/devices',label:'الأجهزة المتصلة',english:'Connected Devices',group:'الشبكة'},{to:'/lan',label:'الشبكة المحلية',english:'LAN',group:'الشبكة'},{to:'/wan',label:'الإنترنت',english:'WAN / Internet',group:'الشبكة'},{to:'/dhcp',label:'خادم DHCP',english:'DHCP',group:'الشبكة'},{to:'/dns',label:'نظام الأسماء',english:'DNS',group:'الشبكة'},{to:'/nat',label:'ترجمة العناوين',english:'NAT',group:'الشبكة'},{to:'/port-forwarding',label:'تحويل المنافذ',english:'Port Forwarding',group:'الشبكة'},
+  {to:'/security',label:'مركز الأمان',english:'Security Center',group:'الأمان'},{to:'/firewall',label:'الجدار الناري',english:'Firewall',group:'الأمان'},{to:'/mac-filter',label:'تصفية MAC',english:'MAC Filtering',group:'الأمان'},{to:'/dmz',label:'المنطقة المعزولة',english:'DMZ',group:'الأمان'},{to:'/upnp',label:'UPnP',english:'UPnP',group:'الأمان'},
+  {to:'/monitoring',label:'المراقبة المباشرة',english:'Live Monitoring',group:'المراقبة'},{to:'/diagnostics',label:'التشخيص',english:'Diagnostics',group:'المراقبة'},{to:'/logs',label:'السجلات',english:'Logs',group:'المراقبة'},
+  {to:'/backup',label:'النسخ والاستعادة',english:'Backup & Restore',group:'النظام'},{to:'/firmware',label:'البرنامج الثابت',english:'Firmware',group:'النظام'},{to:'/system',label:'النظام',english:'System',group:'النظام'},{to:'/settings',label:'الإعدادات',english:'Settings',group:'النظام'},{to:'/about',label:'حول',english:'About',group:'النظام'}
 ];
+const NavIcon=()=> <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg>;
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -46,7 +45,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
           </div>
 
-          <nav className="mt-6 flex-1 space-y-2">
+          <nav className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">
             {sidebarItems.map((item) => (
               <NavLink
                 key={item.to}
@@ -55,8 +54,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 onClick={() => setMobileOpen(false)}
               >
                 <span className="flex items-center gap-3">
-                  <span className="text-base">{item.icon}</span>
-                  <span>{item.label}</span>
+                  <NavIcon/>
+                  <span><span className="block">{item.label}</span><span className="block text-[10px] text-emerald-700">{item.english}</span></span>
                 </span>
                 <span className="text-xs text-emerald-500">↗</span>
               </NavLink>
@@ -80,7 +79,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   ☰
                 </button>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v4.0.0 · Version 4</p>
                   <h1 className="text-xl font-semibold text-[#f1fff4]">{current?.label??'Adil RouterOS'}</h1>
                   <p className="text-sm text-[#6e8772]">{diagnostics.data?.lastSuccessfulEndpoint??'Live local router console'}</p>
                 </div>
@@ -95,7 +94,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <main className="px-4 py-4 sm:px-6 lg:px-8">
             {children ?? <Outlet />}
           </main>
-          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v2.0.0 · Local network console</footer>
+          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v4.0.0 · Version 4</footer>
         </div>
       </div>
     </div>

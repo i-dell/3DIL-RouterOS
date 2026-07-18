@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PollingService } from './polling.js';
 import { getRouterRuntimeConfig } from './config.js';
 import type { Response } from 'express';
+import { createCapabilities } from './capabilities.js';
 
 export const createRouterApi=(service:PollingService)=>{const router=Router(),config=getRouterRuntimeConfig(); const snapshot=(_req:unknown,res:Response)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s)};
  router.get('/api/v1/router/snapshot',snapshot);router.get('/api/router/snapshot',snapshot);
@@ -9,9 +10,9 @@ export const createRouterApi=(service:PollingService)=>{const router=Router(),co
  router.post('/api/v1/router/auth',async(req,res)=>{const {username,password}=req.body as {username?:string,password?:string};if(!username||!password)return res.status(400).json({status:'failed',reason:'Username and password required'});try{await service.start(username,password);res.json({status:'connected',reason:null})}catch(e){const m=e instanceof Error?e.message:'Authentication failed';res.status(/protocol/i.test(m)?409:401).json({status:/protocol/i.test(m)?'protocol-mismatch':'failed',reason:m})}});
  router.post('/api/v1/router/refresh',async(_q,res)=>{try{res.json(await service.refresh())}catch(e){res.status(503).json({reason:e instanceof Error?e.message:'Refresh failed'})}});
  router.post('/api/v1/router/logout',(_q,res)=>{service.stop();res.json({status:'disconnected'})});
- router.get('/api/v1/router/diagnostics',(_q,res)=>res.json(service.getDiagnostics()));router.get('/api/v1/router/capabilities',(_q,res)=>res.json(service.getCapabilities()));
+ router.get('/api/v1/router/diagnostics',(_q,res)=>res.json(service.getDiagnostics()));router.get('/api/v1/router/capabilities',(_q,res)=>res.json(createCapabilities(service.getSnapshot()?.timestamp??null)));
  router.get('/api/v1/router/auth-diagnostics',(_q,res)=>res.json(service.getAuthDiagnostics()));
- router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v2.0.0',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
+ router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v4.0.0',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
  router.get('/api/v1/logs',(_q,res)=>res.json(service.getLogs()));
  router.get('/api/v1/router/logs',(_q,res)=>res.json(service.getLogs()));
  const unsupported=(_q:unknown,res:Response)=>res.status(501).json({supported:false,reason:'Not exposed by the current router firmware'});
@@ -22,4 +23,5 @@ export const createRouterApi=(service:PollingService)=>{const router=Router(),co
  router.post('/api/v1/router/port-mappings',unsupported);
  router.put('/api/v1/router/port-mappings/:id',unsupported);
  router.delete('/api/v1/router/port-mappings/:id',unsupported);
+ for(const path of ['guest-wifi','lan','dhcp','dhcp/reservations','firewall','mac-filter','dmz','upnp','port-mappings','parental-controls','content-rules'])router.get(`/api/v1/router/${path}`,(req,res)=>{const id=req.path.split('/').filter(Boolean).pop()??path;res.status(501).json({supported:false,reason:'Not exposed by the current router firmware',capability:id})});
  return router};
