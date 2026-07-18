@@ -15,6 +15,7 @@ const sidebarItems: SidebarItem[] = [
   { to: '/wan', label: 'الإنترنت', icon: '◐' },
   { to: '/security', label: 'الأمان', icon: '◑' },
   { to: '/settings', label: 'الإعدادات', icon: '◒' },
+  { to: '/logs', label: 'السجل', icon: '≡' },
 ];
 
 interface DashboardLayoutProps {
@@ -56,7 +57,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="space-y-3 rounded-2xl border border-emerald-900/60 bg-[#07120d] p-3">
             <div className="rounded-xl border border-emerald-900/60 bg-[#09170f] p-3">
               <p className="text-xs text-emerald-600">حالة الموجه</p>
-              <p className="mt-1 text-sm font-semibold text-emerald-200">متصل · 99.8%</p>
+              <p className="mt-1 text-sm font-semibold text-emerald-200">تُعرض الحالة من صفحة الإعدادات</p>
             </div>
             <button className="w-full rounded-xl border border-emerald-800/60 bg-transparent px-3 py-2 text-sm text-emerald-100 transition hover:bg-emerald-500/10">تسجيل الخروج</button>
           </div>
@@ -70,7 +71,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   ☰
                 </button>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0-alpha.2</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0-alpha.4</p>
                   <h1 className="text-xl font-semibold text-[#f1fff4]">لوحة التحكم</h1>
                   <p className="text-sm text-[#6e8772]">نظرة مباشرة على حالة الشبكة المنزلية</p>
                 </div>

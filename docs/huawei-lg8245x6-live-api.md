@@ -1,51 +1,36 @@
-# Huawei OptiXstar LG8245X6-10 live API notes
+# Huawei LG8245X6-10 live API — V500R022C10SPC272
 
-## Authentication sequence
+Derived from the two local HAR captures. Captures, cookies, credentials, tokens, and response bodies are excluded from git.
 
-1. Open the router base URL and allow the initial page to load.
-2. Request `/asp/GetRandCount.asp` to initialize the challenge flow.
-3. Request the token page at `/html/ssmp/common/GetRandToken.asp`.
-4. Submit the login form to `/login.cgi` with `UserName`, `PassWord`, `Language=english` and `x.X_HW_Token` when available.
-5. Retain the session cookies and optional CSRF-style token from the login response.
-6. If the session expires, repeat the login flow before issuing read requests again.
+## Authentication
 
-## Required cookies / tokens
+1. `GET /` obtains initial cookies.
+2. `POST /asp/GetRandCount.asp`, Referer `/`, obtains the challenge/token response.
+3. `POST /login.cgi`, `application/x-www-form-urlencoded`, Referer `/`, fields `UserName`, `PassWord`, `Language`, `x.X_HW_Token`.
+4. `GET /index.asp` verifies the session. HTTP 200 from `login.cgi` is not a success marker: captured login responses are empty. Success requires protected frame/menu content and absence of `login.cgi`, `UserName`, and `safelogin.js` login-page markers. A returned login page means rejected credentials; an unknown protected response means protocol mismatch.
 
-- Session cookie such as `JSESSIONID` or equivalent router session cookie.
-- Optional CSRF token header derived from the returned HTML and reused for subsequent requests.
-- No credentials are stored in the repository; they are read from environment variables only.
+Cookies are required for all protected requests. Multiple `Set-Cookie` headers are preserved without splitting an `Expires` date at its comma.
 
 ## Read endpoints
 
-The backend is prepared to request the following router endpoints when supported by the live firmware:
+| Endpoint | Method | Referer | Body/token | Format/parser |
+|---|---|---|---|---|
+| `/html/ssmp/deviceinfo/deviceinfo.asp` | GET | `/index.asp` | none | HTML/JS, `stDeviceInfo(domain, SerialNumber, HardwareVersion, SoftwareVersion, ModelName, ...)` |
+| `/html/bbsp/common/GetLanUserDevInfo.asp` | GET | `/CustomApp/mainpage.asp` | none | JS arrays, `USERDevice`/`USERDeviceNew` positional constructors |
+| `/html/bbsp/userdevinfo/getuserdevinfo.asp` | POST | `/html/bbsp/userdevinfo/userdevinfo1.asp` | captured empty body | JS constructor response; supported parser infrastructure, not polled because the common endpoint provides the list |
+| `/html/bbsp/userdevinfo/getHomeNetdata.asp` | POST | `/html/bbsp/userdevinfo/userdevinfosmart.asp` | `x.X_HW_Token` | `stHomeNetName` array; not polled because token lifecycle for this response was not independently verified |
+| `/html/bbsp/common/getWanDynamicData.asp` | GET | `/index.asp` | none | HTML/JS WAN constructors/declarations |
+| `/html/bbsp/common/wanStateMonitor.asp` | GET and POST observed | `/index.asp` | empty | short status text; not used as the primary WAN source |
+| `/html/amp/wlanbasic/WlanBasic.asp` | GET | `/index.asp` | none | HTML/JS page |
+| `/html/amp/wlanadv/WlanAdvance.asp` | GET | `/index.asp` | none | HTML/JS page |
+| `/html/amp/wlanadv/wlanadvance_api.asp` | GET | `/html/amp/wlanadv/WlanAdvance.asp` | none | `stWlan`/`stWlanWifi` arrays; live Wi-Fi parser |
 
-- `/html/bbsp/common/deviceinfo.asp`
-- `/html/bbsp/common/GetLanUserDevInfo.asp`
-- `/html/bbsp/common/getWanDynamicData.asp`
-- `/html/bbsp/common/wanStateMonitor.asp`
-- `/html/bbsp/common/WlanBasic.asp`
+The parser is a controlled quoted-argument tokenizer for known constructor names. It does not use `eval` and does not execute router JavaScript.
 
-## Response handling
+## Capabilities
 
-- Response bodies are parsed conservatively.
-- Values are surfaced as `null` or `supported: false` when not present or not supported.
-- The implementation avoids inventing values and uses the router response only.
+Device identity, WAN, Wi-Fi and connected devices are reported only when mapped values occur. CPU, memory, temperature, traffic rates, device RSSI, firewall, MAC-filter, DMZ and UPnP status remain unsupported unless a captured response exposes a verified mapping. Configuration writes are unsupported in v2.0.0-alpha.4.
 
-## Local backend contract
+## Local verification
 
-The frontend consumes router data only through the local backend:
-
-- `POST /api/v1/router/auth`
-- `POST /api/v1/router/logout`
-- `GET /api/v1/router/connection`
-- `GET /api/v1/router/device-info`
-- `GET /api/v1/router/health`
-- `GET /api/v1/router/wan`
-- `GET /api/v1/router/wifi`
-- `GET /api/v1/router/devices`
-- `GET /api/v1/router/snapshot`
-
-## Unsupported or uncertain operations
-
-- Some firmware builds do not expose all endpoints or return non-JSON payloads.
-- The backend reports `supported: false` or `null` for unavailable values instead of fabricating placeholders.
+Run the backend inside the router LAN, set `ROUTER_USERNAME` and `ROUTER_PASSWORD` only in process memory/environment, then run `npm run test:live`. The capture establishes the protocol, but current live reachability and credentials must be verified on the target LAN.

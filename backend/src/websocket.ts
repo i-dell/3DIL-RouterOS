@@ -19,7 +19,7 @@ export const attachWebsocket = (wss: WebSocketServer, pollingService: PollingSer
     };
 
     const errorListener = (error: Error) => {
-      socket.send(JSON.stringify({ event: 'error', payload: { message: error.message } }));
+      socket.send(JSON.stringify({ event: 'error', payload: { message: 'Router polling failed', category: /session/i.test(error.message) ? 'session' : 'connectivity' } }));
     };
 
     pollingService.on('snapshot', snapshotListener);

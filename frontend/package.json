@@ -1,17 +1,18 @@
 {
   "name": "@3dil-routeros/frontend",
   "private": true,
-  "version": "2.0.0-alpha.3",
+  "version": "2.0.0-alpha.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "npm --prefix ../shared run build && tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx --max-warnings=0",
-    "typecheck": "npm --prefix ../shared run build && tsc --noEmit"
+    "typecheck": "npm --prefix ../shared run build && tsc --noEmit",
+    "test": "tsx --test src/*.test.ts"
   },
   "dependencies": {
-    "@3dil-routeros/shared": "^2.0.0-alpha.3",
+    "@3dil-routeros/shared": "^2.0.0-alpha.4",
     "axios": "^1.9.0",
     "framer-motion": "^12.42.2",
     "react": "^19.1.0",
@@ -26,6 +27,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.8.3",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "tsx": "^4.20.0"
   }
 }
