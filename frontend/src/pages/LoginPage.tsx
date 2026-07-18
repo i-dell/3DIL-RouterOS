@@ -186,11 +186,9 @@ export const LoginPage = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-700 text-2xl font-semibold text-black shadow-lg shadow-emerald-900/40">
-                  3D
-                </div>
+                <img src="/branding/logo-color.png" alt="Adil" className="h-24 w-64 object-contain object-left drop-shadow-lg" />
                 <div>
-                  <h1 className="text-3xl font-semibold text-[#f7fff8] sm:text-4xl">3DIL RouterOS</h1>
+                  <h1 className="text-3xl font-semibold text-[#f7fff8] sm:text-4xl">Adil RouterOS</h1>
                   <p className="mt-2 text-lg text-emerald-300">Local Network Console</p>
                 </div>
               </div>
@@ -313,7 +311,7 @@ export const LoginPage = () => {
                   <span>Huawei Driver</span>
                   <span>LG8245X6</span>
                   <span>Version</span>
-                  <span>v2.0.0-alpha.3</span>
+                  <span>v2.0.0</span>
                 </div>
               </div>
             </motion.form>

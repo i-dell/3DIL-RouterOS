@@ -1,4 +1,4 @@
-import type { RouterAuth } from '@3dil-routeros/shared';
+import type { RouterAuth } from '@adil-routeros/shared';
 import { getRouterRuntimeConfig } from '../config.js';
 import type { DeviceSnapshot, RouterSnapshot, SafeDiagnostic, SupportMeta } from '../types.js';
 

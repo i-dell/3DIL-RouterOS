@@ -16,6 +16,7 @@ const sidebarItems: SidebarItem[] = [
   { to: '/security', label: 'الأمان', icon: '◑' },
   { to: '/settings', label: 'الإعدادات', icon: '◒' },
   { to: '/logs', label: 'السجل', icon: '≡' },
+  { to: '/about', label: 'حول', icon: 'ⓘ' },
 ];
 
 interface DashboardLayoutProps {
@@ -30,9 +31,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className={`fixed inset-y-0 right-0 z-30 w-72 border-l border-emerald-900/50 bg-[#050b08] p-5 shadow-[0_0_0_1px_rgba(16,185,129,0.1)] transition-transform duration-300 lg:static lg:flex lg:w-72 lg:flex-col ${mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-[#07130d] px-3 py-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-lg font-semibold text-black">3D</div>
+            <img src="/branding/logo-white.png" alt="Adil" className="h-11 w-24 object-contain" />
             <div>
-              <p className="text-[15px] font-semibold text-emerald-300">3DIL RouterOS</p>
+              <p className="text-[15px] font-semibold text-emerald-300">Adil RouterOS</p>
               <p className="text-xs text-emerald-700/90">Local Network Console</p>
             </div>
           </div>
@@ -71,12 +72,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   ☰
                 </button>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0-alpha.4</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0</p>
                   <h1 className="text-xl font-semibold text-[#f1fff4]">لوحة التحكم</h1>
                   <p className="text-sm text-[#6e8772]">نظرة مباشرة على حالة الشبكة المنزلية</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <img src="/branding/browser.png" alt="Adil" className="h-8 w-8 rounded-lg" />
                 <button className="rounded-full border border-emerald-800/60 bg-[#07120d] p-2 text-emerald-200">🔔</button>
                 <button className="rounded-full border border-emerald-800/60 bg-[#07120d] p-2 text-emerald-200">☾</button>
                 <button className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 font-semibold text-black">AD</button>
@@ -87,6 +89,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <main className="px-4 py-4 sm:px-6 lg:px-8">
             {children ?? <Outlet />}
           </main>
+          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v2.0.0 · Local network console</footer>
         </div>
       </div>
     </div>

@@ -1,0 +1,2 @@
+import { Page } from './shared.js';
+export const AboutPage=()=> <Page title="حول Adil RouterOS"><div className="rounded-3xl border border-emerald-900/60 bg-[#07120d] p-8 text-center"><img src="/branding/logo-color.png" alt="Adil" className="mx-auto w-full max-w-lg"/><p className="mt-6 text-emerald-200">Adil RouterOS v2.0.0</p><p className="mt-2 text-sm text-emerald-600">Local Huawei router monitoring console.</p></div></Page>;

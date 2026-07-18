@@ -18,6 +18,9 @@ body {
   background: #030806;
 }
 
+.app-splash { min-height: 100vh; display: grid; place-content: center; gap: 1rem; text-align: center; color: #a7f3d0; }
+.app-splash img { width: min(22rem, 75vw); height: auto; }
+
 * {
   box-sizing: border-box;
 }

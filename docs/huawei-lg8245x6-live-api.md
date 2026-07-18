@@ -29,7 +29,7 @@ The parser is a controlled quoted-argument tokenizer for known constructor names
 
 ## Capabilities
 
-Device identity, WAN, Wi-Fi and connected devices are reported only when mapped values occur. CPU, memory, temperature, traffic rates, device RSSI, firewall, MAC-filter, DMZ and UPnP status remain unsupported unless a captured response exposes a verified mapping. Configuration writes are unsupported in v2.0.0-alpha.4.
+Device identity, WAN, Wi-Fi and connected devices are reported only when mapped values occur. CPU, memory, temperature, traffic rates, device RSSI, firewall, MAC-filter, DMZ and UPnP status remain unsupported unless a captured response exposes a verified mapping. Configuration writes are unsupported in v2.0.0.
 
 ## Local verification
 

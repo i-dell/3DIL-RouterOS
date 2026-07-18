@@ -1,0 +1,13 @@
+{
+  "name": "Adil RouterOS",
+  "short_name": "Adil RouterOS",
+  "version": "2.0.0",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030806",
+  "theme_color": "#030806",
+  "icons": [
+    { "src": "/branding/browser.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "/branding/favicon.ico", "sizes": "16x16 32x32 48x48", "type": "image/x-icon" }
+  ]
+}

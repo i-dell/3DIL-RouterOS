@@ -2,8 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { pino } from 'pino';
-import type { RouterHealth, RouterVersionInfo } from '@3dil-routeros/shared';
-import { defaultRouterVersion } from '@3dil-routeros/shared';
+import type { RouterHealth, RouterVersionInfo } from '@adil-routeros/shared';
+import { defaultRouterVersion } from '@adil-routeros/shared';
 import { createDatabase } from './storage.js';
 import { getRouterRuntimeConfig } from './config.js';
 import { createRouterApi } from './routes.js';
@@ -29,7 +29,7 @@ app.get('/api/health', (_req, res) => {
   };
   res.json(response);
 });
-app.get('/health', (_req, res) => res.json({ status: 'ok', version: 'v2.0.0-alpha.4', routerAgent: 'running' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok', version: 'v2.0.0', routerAgent: 'running' }));
 
 app.get('/api/version', (_req, res) => {
   const response: RouterVersionInfo = defaultRouterVersion;

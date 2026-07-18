@@ -10,5 +10,5 @@ export const createRouterApi=(service:PollingService)=>{const router=Router(),co
  router.post('/api/v1/router/refresh',async(_q,res)=>{try{res.json(await service.refresh())}catch(e){res.status(503).json({reason:e instanceof Error?e.message:'Refresh failed'})}});
  router.post('/api/v1/router/logout',(_q,res)=>{service.stop();res.json({status:'disconnected'})});
  router.get('/api/v1/router/diagnostics',(_q,res)=>res.json(service.getDiagnostics()));router.get('/api/v1/router/capabilities',(_q,res)=>res.json(service.getCapabilities()));
- router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v2.0.0-alpha.4',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
+ router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v2.0.0',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
  router.get('/api/v1/router/logs',(_q,res)=>res.json([{timestamp:new Date().toISOString(),level:'info',message:'Safe event log active'}]));return router};

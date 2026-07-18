@@ -5,7 +5,7 @@
     "allowJs": false,
     "baseUrl": "..",
     "paths": {
-      "@3dil-routeros/shared": ["shared/src/index.ts"]
+      "@adil-routeros/shared": ["shared/src/index.ts"]
     },
     "noEmit": true,
     "types": ["vite/client", "node"]
