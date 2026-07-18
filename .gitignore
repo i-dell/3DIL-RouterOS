@@ -6,4 +6,9 @@ coverage/
 .env
 .env.*
 *.log
+*.db
+*.sqlite
+*.sqlite3
+*.har
+private-har/
 .DS_Store
