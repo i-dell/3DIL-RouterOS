@@ -12,7 +12,7 @@ export const createRouterApi=(service:PollingService)=>{const router=Router(),co
  router.post('/api/v1/router/logout',(_q,res)=>{service.stop();res.json({status:'disconnected'})});
  router.get('/api/v1/router/diagnostics',(_q,res)=>res.json(service.getDiagnostics()));router.get('/api/v1/router/capabilities',(_q,res)=>res.json(createCapabilities(service.getSnapshot()?.timestamp??null)));
  router.get('/api/v1/router/auth-diagnostics',(_q,res)=>res.json(service.getAuthDiagnostics()));
- router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v2.0.0',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
+ router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v4.0.0',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
  router.get('/api/v1/logs',(_q,res)=>res.json(service.getLogs()));
  router.get('/api/v1/router/logs',(_q,res)=>res.json(service.getLogs()));
  const unsupported=(_q:unknown,res:Response)=>res.status(501).json({supported:false,reason:'Not exposed by the current router firmware'});

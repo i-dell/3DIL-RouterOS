@@ -39,6 +39,6 @@ export interface RouterDriverFactory {
 
 export const defaultRouterVersion: RouterVersionInfo = {
   name: 'Huawei OptiXstar LG8245X6-10',
-  version: 'v2.0.0',
+  version: 'v4.0.0',
   model: 'LG8245X6',
 };

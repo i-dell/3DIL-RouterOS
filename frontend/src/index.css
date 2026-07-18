@@ -5,6 +5,23 @@
 @tailwind utilities;
 
 :root {
+  --background: #020504;
+  --surface: #07100c;
+  --surface-elevated: #0a1310;
+  --border: rgba(110, 140, 122, .22);
+  --text-primary: #edf7f0;
+  --text-secondary: #879a8d;
+  --success: #45d563;
+  --warning: #f6b934;
+  --error: #ef5350;
+  --info: #4ba3f5;
+  --disabled: #526158;
+  --focus: #74e68b;
+  --sidebar-expanded: 17rem;
+  --sidebar-collapsed: 5rem;
+  --header-height: 5.5rem;
+  --card-radius: 1rem;
+  --transition: 180ms ease;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: dark;
   background-color: #030806;
@@ -15,8 +32,14 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #030806;
+  background: radial-gradient(circle at 65% -10%, rgba(34,197,94,.08), transparent 32%), var(--background);
+  overflow-x: hidden;
 }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+[data-theme='light'] { --background:#eef4f0;--surface:#f8fbf9;--surface-elevated:#fff;--border:rgba(24,72,45,.18);--text-primary:#102218;--text-secondary:#52675a;color-scheme:light; }
+[data-theme='light'] body { filter:none; }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important; } }
 
 .app-splash { min-height: 100vh; display: grid; place-content: center; gap: 1rem; text-align: center; color: #a7f3d0; }
 .app-splash img { width: min(22rem, 75vw); height: auto; }

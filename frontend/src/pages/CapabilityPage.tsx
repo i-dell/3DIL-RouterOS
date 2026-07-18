@@ -4,6 +4,11 @@ import {Card,Empty,Page,State,useApi} from './shared.js';
 export interface Capability {id:string;arabicName:string;englishName:string;category:string;state:string;readSupported:boolean;writeSupported:boolean;supportSource:string;sourceEndpoint:string|null;parserName:string|null;lastVerified:string|null;unsupportedReason:string|null;riskLevel:string;requiresConfirmation:boolean;requiresReauthentication:boolean}
 export interface FeatureDefinition {id:string;path:string;arabic:string;english:string;category:'general'|'network'|'security'|'monitoring'|'system';description:string}
 export const features:FeatureDefinition[]=[
+ {id:'advanced',path:'/advanced',arabic:'الإعدادات المتقدمة',english:'Advanced Settings',category:'system',description:'إعدادات الراوتر المتقدمة المتاحة من firmware'},
+ {id:'parental-controls',path:'/parental-control',arabic:'الرقابة الأبوية',english:'Parental Control',category:'security',description:'سياسات الرقابة التي يكشفها الراوتر'},
+ {id:'qos',path:'/qos',arabic:'جودة الخدمة',english:'QoS',category:'network',description:'إمكانات جودة الخدمة المتاحة'},
+ {id:'reboot',path:'/reboot',arabic:'إعادة تشغيل الراوتر',english:'Reboot Router',category:'system',description:'إجراء عالي الخطورة وغير مفعل دون تحقق آمن'},
+ {id:'device-info',path:'/about-device',arabic:'حول الجهاز',english:'About Device',category:'system',description:'معلومات الجهاز الحقيقية من الراوتر'},
  {id:'overview',path:'/overview',arabic:'نظرة عامة',english:'Overview',category:'general',description:'ملخص حالة منصة Adil RouterOS'},
  {id:'quick-setup',path:'/quick-setup',arabic:'الإعدادات السريعة',english:'Quick Setup',category:'general',description:'إرشادات آمنة للإعدادات المدعومة'},
  {id:'network-status',path:'/network-status',arabic:'حالة الشبكة',english:'Network Status',category:'network',description:'حالة الاتصال المباشرة'},

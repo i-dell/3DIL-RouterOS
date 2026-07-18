@@ -29,7 +29,7 @@ app.get('/api/health', (_req, res) => {
   };
   res.json(response);
 });
-app.get('/health', (_req, res) => res.json({ status: 'ok', version: 'v2.0.0', routerAgent: 'running' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok', version: 'v4.0.0', routerAgent: 'running' }));
 
 app.get('/api/version', (_req, res) => {
   const response: RouterVersionInfo = defaultRouterVersion;

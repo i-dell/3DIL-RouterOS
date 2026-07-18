@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import axios from 'axios';
 import { useApi } from '../pages/shared.js';
 import type { Diagnostics } from '../pages/routerTypes.js';
+import { MobileBottomNav } from '../components/navigation/MobileBottomNav.js';
 
 interface SidebarItem {
   to: string;
@@ -13,11 +14,19 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  {to:'/overview',label:'نظرة عامة',english:'Overview',group:'عام'},{to:'/dashboard',label:'لوحة التحكم',english:'Dashboard',group:'عام'},{to:'/quick-setup',label:'الإعدادات السريعة',english:'Quick Setup',group:'عام'},
-  {to:'/network-status',label:'حالة الشبكة',english:'Network Status',group:'الشبكة'},{to:'/wifi',label:'الشبكة اللاسلكية',english:'Wi-Fi Settings',group:'الشبكة'},{to:'/guest-wifi',label:'شبكة الضيوف',english:'Guest Network',group:'الشبكة'},{to:'/devices',label:'الأجهزة المتصلة',english:'Connected Devices',group:'الشبكة'},{to:'/lan',label:'الشبكة المحلية',english:'LAN',group:'الشبكة'},{to:'/wan',label:'الإنترنت',english:'WAN / Internet',group:'الشبكة'},{to:'/dhcp',label:'خادم DHCP',english:'DHCP',group:'الشبكة'},{to:'/dns',label:'نظام الأسماء',english:'DNS',group:'الشبكة'},{to:'/nat',label:'ترجمة العناوين',english:'NAT',group:'الشبكة'},{to:'/port-forwarding',label:'تحويل المنافذ',english:'Port Forwarding',group:'الشبكة'},
-  {to:'/security',label:'مركز الأمان',english:'Security Center',group:'الأمان'},{to:'/firewall',label:'الجدار الناري',english:'Firewall',group:'الأمان'},{to:'/mac-filter',label:'تصفية MAC',english:'MAC Filtering',group:'الأمان'},{to:'/dmz',label:'المنطقة المعزولة',english:'DMZ',group:'الأمان'},{to:'/upnp',label:'UPnP',english:'UPnP',group:'الأمان'},
-  {to:'/monitoring',label:'المراقبة المباشرة',english:'Live Monitoring',group:'المراقبة'},{to:'/diagnostics',label:'التشخيص',english:'Diagnostics',group:'المراقبة'},{to:'/logs',label:'السجلات',english:'Logs',group:'المراقبة'},
-  {to:'/backup',label:'النسخ والاستعادة',english:'Backup & Restore',group:'النظام'},{to:'/firmware',label:'البرنامج الثابت',english:'Firmware',group:'النظام'},{to:'/system',label:'النظام',english:'System',group:'النظام'},{to:'/settings',label:'الإعدادات',english:'Settings',group:'النظام'},{to:'/about',label:'حول',english:'About',group:'النظام'}
+  {to:'/dashboard',label:'لوحة التحكم',english:'Dashboard',group:'primary'},
+  {to:'/devices',label:'الأجهزة المتصلة',english:'Connected Devices',group:'primary'},
+  {to:'/wifi',label:'الشبكة اللاسلكية',english:'Wi-Fi Settings',group:'primary'},
+  {to:'/advanced',label:'الإعدادات المتقدمة',english:'Advanced Settings',group:'primary'},
+  {to:'/security',label:'الأمان',english:'Security',group:'primary'},
+  {to:'/parental-control',label:'الرقابة الأبوية',english:'Parental Control',group:'primary'},
+  {to:'/qos',label:'جودة الخدمة',english:'QoS',group:'primary'},
+  {to:'/reboot',label:'إعادة تشغيل الراوتر',english:'Reboot Router',group:'primary'},
+  {to:'/diagnostics',label:'تشخيص الشبكة',english:'Network Diagnostics',group:'primary'},
+  {to:'/logs',label:'سجلات النظام',english:'System Logs',group:'primary'},
+  {to:'/backup',label:'نسخ احتياطي / استعادة',english:'Backup / Restore',group:'primary'},
+  {to:'/quick-setup',label:'الإعدادات السريعة',english:'Quick Setup',group:'primary'},
+  {to:'/about-device',label:'حول الجهاز',english:'About Device',group:'primary'}
 ];
 const NavIcon=()=> <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg>;
 
@@ -28,7 +37,9 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed,setCollapsed]=useState(()=>localStorage.getItem('adil.sidebar.collapsed')==='true');
+  const [theme,setTheme]=useState(()=>localStorage.getItem('adil.theme')??'dark');
   useEffect(()=>{localStorage.setItem('adil.sidebar.collapsed',String(collapsed))},[collapsed]);
+  useEffect(()=>{localStorage.setItem('adil.theme',theme);document.documentElement.dataset.theme=theme},[theme]);
   useEffect(()=>{document.body.style.overflow=mobileOpen?'hidden':'';const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setMobileOpen(false)};addEventListener('keydown',close);return()=>{document.body.style.overflow='';removeEventListener('keydown',close)}},[mobileOpen]);
   const diagnostics = useApi<Diagnostics>('/api/v1/router/diagnostics');
   const location = useLocation();
@@ -69,6 +80,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           <div className={`space-y-3 rounded-2xl border border-emerald-900/60 bg-[#07120d] p-3 ${collapsed?'lg:hidden':''}`}>
+            <button onClick={()=>setTheme(value=>value==='dark'?'light':'dark')} aria-label="تبديل المظهر" className="flex min-h-11 w-full items-center justify-between rounded-xl border border-emerald-900/60 px-3 text-sm"><span>الوضع {theme==='dark'?'الداكن':'الفاتح'}</span><span className={`h-5 w-9 rounded-full p-0.5 ${theme==='dark'?'bg-emerald-500':'bg-slate-500'}`}><span className={`block h-4 w-4 rounded-full bg-white transition ${theme==='dark'?'translate-x-0':'-translate-x-4'}`}/></span></button>
             <div className="rounded-xl border border-emerald-900/60 bg-[#09170f] p-3">
               <p className="text-xs text-emerald-600">حالة الموجه</p>
               <p className="mt-1 text-sm font-semibold text-emerald-200">{diagnostics.loading?'Loading…':diagnostics.data?.authenticationVerified?'Authenticated':diagnostics.data?.safeReason??'Not authenticated'}</p>
@@ -85,7 +97,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   ☰
                 </button>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v4.0.0</p>
                   <h1 className="text-xl font-semibold text-[#f1fff4]">{current?.label??'Adil RouterOS'}</h1>
                   <p className="text-sm text-[#6e8772]">{diagnostics.data?.lastSuccessfulEndpoint??'Live local router console'}</p>
                 </div>
@@ -97,10 +109,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
           </header>
 
-          <main className="px-4 py-4 sm:px-6 lg:px-8">
+          <main className="px-4 py-4 pb-24 sm:px-6 lg:px-8 lg:pb-4">
             {children ?? <Outlet />}
           </main>
-          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v2.0.0</footer>
+          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v4.0.0</footer>
+          <MobileBottomNav />
         </div>
       </div>
     </div>
