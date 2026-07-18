@@ -1,6 +1,9 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import axios from 'axios';
+import { useApi } from '../pages/shared.js';
+import type { Diagnostics } from '../pages/routerTypes.js';
 
 interface SidebarItem {
   to: string;
@@ -25,6 +28,11 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const diagnostics = useApi<Diagnostics>('/api/v1/router/diagnostics');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const current = sidebarItems.find((item) => item.to === location.pathname);
+  const logout = async () => { await axios.post('/api/v1/router/logout'); navigate('/login'); };
 
   return (
     <div className="min-h-screen bg-[#040806] text-[#e8f7ed]" dir="rtl">
@@ -58,9 +66,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="space-y-3 rounded-2xl border border-emerald-900/60 bg-[#07120d] p-3">
             <div className="rounded-xl border border-emerald-900/60 bg-[#09170f] p-3">
               <p className="text-xs text-emerald-600">حالة الموجه</p>
-              <p className="mt-1 text-sm font-semibold text-emerald-200">تُعرض الحالة من صفحة الإعدادات</p>
+              <p className="mt-1 text-sm font-semibold text-emerald-200">{diagnostics.loading?'Loading…':diagnostics.data?.authenticationVerified?'Authenticated':diagnostics.data?.safeReason??'Not authenticated'}</p>
             </div>
-            <button className="w-full rounded-xl border border-emerald-800/60 bg-transparent px-3 py-2 text-sm text-emerald-100 transition hover:bg-emerald-500/10">تسجيل الخروج</button>
+            <button onClick={()=>void logout()} className="w-full rounded-xl border border-emerald-800/60 bg-transparent px-3 py-2 text-sm text-emerald-100 transition hover:bg-emerald-500/10">تسجيل الخروج</button>
           </div>
         </aside>
 
@@ -73,15 +81,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </button>
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0</p>
-                  <h1 className="text-xl font-semibold text-[#f1fff4]">لوحة التحكم</h1>
-                  <p className="text-sm text-[#6e8772]">نظرة مباشرة على حالة الشبكة المنزلية</p>
+                  <h1 className="text-xl font-semibold text-[#f1fff4]">{current?.label??'Adil RouterOS'}</h1>
+                  <p className="text-sm text-[#6e8772]">{diagnostics.data?.lastSuccessfulEndpoint??'Live local router console'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <img src="/branding/browser.png" alt="Adil" className="h-8 w-8 rounded-lg" />
-                <button className="rounded-full border border-emerald-800/60 bg-[#07120d] p-2 text-emerald-200">🔔</button>
-                <button className="rounded-full border border-emerald-800/60 bg-[#07120d] p-2 text-emerald-200">☾</button>
-                <button className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 font-semibold text-black">AD</button>
+                <span className={`h-3 w-3 rounded-full ${diagnostics.data?.authenticationVerified?'bg-emerald-400':'bg-amber-400'}`} aria-label={diagnostics.data?.authenticationVerified?'Authenticated':'Not authenticated'} />
               </div>
             </div>
           </header>

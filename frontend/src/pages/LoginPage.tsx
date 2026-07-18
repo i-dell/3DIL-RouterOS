@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useApi } from './shared.js';
+import type { RouterConfig, RouterSnapshot } from './routerTypes.js';
 
 type LoginStatus = 'idle' | 'loading' | 'success' | 'authentication-failed' | 'router-offline' | 'backend-offline' | 'session-expired';
 
@@ -16,7 +18,7 @@ type StatusTheme = {
 
 const statusStyles: Record<LoginStatus, StatusTheme> = {
   idle: {
-    badge: 'Router Detected',
+    badge: 'Local Agent',
     title: 'Connect Securely',
     description: 'Use your router credentials to access the local console.',
     accent: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
@@ -106,6 +108,8 @@ export const LoginPage = () => {
   const [status, setStatus] = useState<LoginStatus>('idle');
   const [message, setMessage] = useState('Secure local access to the router console.');
   const navigate = useNavigate();
+  const config = useApi<RouterConfig>('/api/v1/router/config');
+  const snapshot = useApi<RouterSnapshot>('/api/v1/router/snapshot');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -195,21 +199,21 @@ export const LoginPage = () => {
 
               <div className="rounded-[24px] border border-emerald-900/70 bg-[#07130d]/70 p-5">
                 <div className="flex items-center justify-between gap-4 text-sm text-[#93ad98]">
-                  <span>Router Detected</span>
-                  <span className="font-medium text-emerald-300">Huawei OptiXstar LG8245X6-10</span>
+                  <span>Live backend</span>
+                  <span className="font-medium text-emerald-300">{config.loading?'Loading…':config.data?.sessionStatus??config.error}</span>
                 </div>
                 <div className="mt-4 grid gap-3 rounded-2xl border border-emerald-900/60 bg-[#08150e] p-4 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-[#93ad98]">Address</span>
-                    <span className="font-semibold text-[#f5fff7]">192.168.1.1</span>
+                    <span className="font-semibold text-[#f5fff7]">{config.data?.routerAddress??'Loading…'}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#93ad98]">Firmware</span>
-                    <span className="font-semibold text-[#f5fff7]">V500R022C10SPC272</span>
+                    <span className="font-semibold text-[#f5fff7]">{snapshot.data?.deviceInfo.firmware??(snapshot.loading?'Loading…':'Available after authentication')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#93ad98]">Status</span>
-                    <span className="font-semibold text-emerald-300">Router Detected</span>
+                    <span className="font-semibold text-emerald-300">{snapshot.data?.authentication.status??config.data?.sessionStatus??'Loading…'}</span>
                   </div>
                 </div>
               </div>
@@ -308,8 +312,7 @@ export const LoginPage = () => {
 
               <div className="mt-6 border-t border-emerald-900/70 pt-4 text-center text-xs text-[#7d9580]">
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <span>Huawei Driver</span>
-                  <span>LG8245X6</span>
+                  <span>{snapshot.data?.deviceInfo.model??'Huawei router'}</span>
                   <span>Version</span>
                   <span>v2.0.0</span>
                 </div>
