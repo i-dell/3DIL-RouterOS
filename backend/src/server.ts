@@ -13,6 +13,7 @@ import {NetworkHistoryStore} from './network/history.js';
 import {SecurityStore} from './security/security-store.js';
 import {calculateSecurityScore} from './security/security-center.js';
 import {MonitoringStore} from './monitoring/store.js';
+import {DiagnosticsStore} from './diagnostics/store.js';import {DiagnosticsOrchestrator} from './diagnostics/orchestrator.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -46,7 +47,8 @@ const pollingService = new PollingService(undefined,db);
 const networkHistory=new NetworkHistoryStore();void networkHistory.init();pollingService.on('snapshot',snapshot=>void networkHistory.record(snapshot));
 const securityStore=new SecurityStore();void securityStore.init();pollingService.on('snapshot',snapshot=>{const score=calculateSecurityScore(snapshot);void securityStore.recordScore(snapshot.timestamp,score.score,score.verifiedControls,score.confidence);pollingService.emit('security.score.updated',{score:score.score,verifiedControls:score.verifiedControls,confidence:score.confidence,timestamp:snapshot.timestamp})});
 const monitoringStore=new MonitoringStore();void monitoringStore.init();pollingService.on('snapshot',snapshot=>{void monitoringStore.record(snapshot);pollingService.emit('monitoring.snapshot',{version:1,collectedAt:snapshot.timestamp})});
-app.use(createRouterApi(pollingService,db,networkHistory,securityStore,monitoringStore));
+const diagnosticsStore=new DiagnosticsStore();void diagnosticsStore.init();const diagnostics=new DiagnosticsOrchestrator(diagnosticsStore);for(const event of ['diagnostics.run.started','diagnostics.run.completed','diagnostics.run.failed'])diagnostics.on(event,payload=>pollingService.emit(event,payload));
+app.use(createRouterApi(pollingService,db,networkHistory,securityStore,monitoringStore,diagnosticsStore,diagnostics));
 
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 attachWebsocket(wss, pollingService);

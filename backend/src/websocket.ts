@@ -20,6 +20,7 @@ export const attachWebsocket = (wss: WebSocketServer, pollingService: PollingSer
     const intelligenceListener=(payload:unknown)=>socket.send(JSON.stringify({event:'device-updated',payload}));
     const securityListener=(payload:unknown)=>socket.send(JSON.stringify({event:'security.score.updated',payload}));
     const monitoringListener=(payload:unknown)=>socket.send(JSON.stringify({event:'monitoring.snapshot',version:1,payload}));
+    const diagnosticsListener=(payload:unknown)=>socket.send(JSON.stringify({event:'diagnostics.run.progress',version:1,payload}));
 
     const errorListener = (error: Error) => {
       socket.send(JSON.stringify({ event: 'error', payload: { message: 'Router polling failed', category: /session/i.test(error.message) ? 'session' : 'connectivity' } }));
@@ -31,6 +32,7 @@ export const attachWebsocket = (wss: WebSocketServer, pollingService: PollingSer
     for(const event of ['device-ip-changed','device-hostname-changed','device-roamed'])pollingService.on(event,intelligenceListener);
     pollingService.on('security.score.updated',securityListener);
     pollingService.on('monitoring.snapshot',monitoringListener);
+    for(const event of ['diagnostics.run.started','diagnostics.run.completed','diagnostics.run.failed'])pollingService.on(event,diagnosticsListener);
     pollingService.on('error', errorListener);
 
     socket.on('close', () => {
@@ -40,6 +42,7 @@ export const attachWebsocket = (wss: WebSocketServer, pollingService: PollingSer
       for(const event of ['device-ip-changed','device-hostname-changed','device-roamed'])pollingService.off(event,intelligenceListener);
       pollingService.off('security.score.updated',securityListener);
       pollingService.off('monitoring.snapshot',monitoringListener);
+      for(const event of ['diagnostics.run.started','diagnostics.run.completed','diagnostics.run.failed'])pollingService.off(event,diagnosticsListener);
       pollingService.off('error', errorListener);
     });
   });
