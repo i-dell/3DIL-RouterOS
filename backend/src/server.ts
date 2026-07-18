@@ -9,6 +9,7 @@ import { getRouterRuntimeConfig } from './config.js';
 import { createRouterApi } from './routes.js';
 import { PollingService } from './polling.js';
 import { attachWebsocket } from './websocket.js';
+import {NetworkHistoryStore} from './network/history.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -39,7 +40,8 @@ app.get('/api/version', (_req, res) => {
 const db = createDatabase();
 void db.init();
 const pollingService = new PollingService(undefined,db);
-app.use(createRouterApi(pollingService,db));
+const networkHistory=new NetworkHistoryStore();void networkHistory.init();pollingService.on('snapshot',snapshot=>void networkHistory.record(snapshot));
+app.use(createRouterApi(pollingService,db,networkHistory));
 
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 attachWebsocket(wss, pollingService);

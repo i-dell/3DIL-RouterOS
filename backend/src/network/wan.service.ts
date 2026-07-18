@@ -1,0 +1,2 @@
+import type {RouterSnapshot} from '../types.js';import {moduleResult} from './types.js';
+export const readWan=(s:RouterSnapshot|null)=>moduleResult('wan',s,{status:s?.wan.state??null,isp:null,connectionType:s?.wan.connectionType??null,publicIp:s?.wan.ip??null,ipv6:null,gateway:s?.wan.gateway??null,dns:s?.wan.dns??null,mac:null,mtu:null,leaseTime:null,connectionTime:s?.wan.uptime??null,rx:s?.wan.downloadBytes??null,tx:s?.wan.uploadBytes??null,currentSpeed:null,peakSpeed:null},s?.wan.supported===true,s?.wan.sourceEndpoint??null);

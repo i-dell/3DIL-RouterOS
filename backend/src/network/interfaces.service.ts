@@ -1,0 +1,3 @@
+import type {RouterSnapshot} from '../types.js';import {moduleResult} from './types.js';
+export const readInterfaces=(s:RouterSnapshot|null)=>moduleResult('interfaces',s,{interfaces:[...(s?[{name:'WAN',type:'WAN',status:s.wan.state,speed:null,duplex:null,packets:null,errors:null,crc:null,utilization:null}]:[]),...(s?.wifi.bands??[]).map((r,index)=>({name:`Wi-Fi ${index+1}`,type:r.band,status:r.enabled==null?null:r.enabled?'Enabled':'Disabled',speed:null,duplex:null,packets:null,errors:null,crc:null,utilization:null}))]},s!=null,s?.wan.sourceEndpoint??s?.wifi.sourceEndpoint??null);
+export const readUnsupportedNetwork=(module:string,s:RouterSnapshot|null)=>moduleResult(module,s,{status:null,items:null},false,null);
