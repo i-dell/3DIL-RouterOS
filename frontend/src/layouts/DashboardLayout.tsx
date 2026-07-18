@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
 import { useApi } from '../pages/shared.js';
@@ -27,6 +27,9 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed,setCollapsed]=useState(()=>localStorage.getItem('adil.sidebar.collapsed')==='true');
+  useEffect(()=>{localStorage.setItem('adil.sidebar.collapsed',String(collapsed))},[collapsed]);
+  useEffect(()=>{document.body.style.overflow=mobileOpen?'hidden':'';const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setMobileOpen(false)};addEventListener('keydown',close);return()=>{document.body.style.overflow='';removeEventListener('keydown',close)}},[mobileOpen]);
   const diagnostics = useApi<Diagnostics>('/api/v1/router/diagnostics');
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,33 +39,36 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-[#040806] text-[#e8f7ed]" dir="rtl">
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className={`fixed inset-y-0 right-0 z-30 w-72 border-l border-emerald-900/50 bg-[#050b08] p-5 shadow-[0_0_0_1px_rgba(16,185,129,0.1)] transition-transform duration-300 lg:static lg:flex lg:w-72 lg:flex-col ${mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+        {mobileOpen&&<button aria-label="إغلاق القائمة" onClick={()=>setMobileOpen(false)} className="fixed inset-0 z-20 bg-black/60 lg:hidden"/>}
+        <aside className={`fixed inset-y-0 right-0 z-30 border-l border-emerald-900/50 bg-[#050b08] p-3 shadow-[0_0_0_1px_rgba(16,185,129,0.1)] transition-all duration-300 lg:static lg:flex lg:flex-col ${collapsed?'lg:w-20':'lg:w-72'} ${mobileOpen ? 'w-72 translate-x-0' : 'w-72 translate-x-full lg:translate-x-0'}`}>
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-[#07130d] px-3 py-3">
             <img src="/branding/logo-white.png" alt="Adil" className="h-11 w-24 object-contain" />
-            <div>
+            <div className={collapsed?'lg:hidden':''}>
               <p className="text-[15px] font-semibold text-emerald-300">Adil RouterOS</p>
               <p className="text-xs text-emerald-700/90">Local Network Console</p>
             </div>
           </div>
 
-          <nav className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">
+          <button onClick={()=>setCollapsed(value=>!value)} aria-label={collapsed?'توسيع القائمة':'طي القائمة'} aria-expanded={!collapsed} className="mt-3 hidden w-full rounded-xl border border-emerald-900 p-2 text-emerald-300 lg:block">{collapsed?'←':'→ طي القائمة'}</button>
+          <nav className="mt-4 flex-1 space-y-1 overflow-y-auto pr-1">
             {sidebarItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) => `flex items-center justify-between rounded-2xl px-3 py-3 text-sm transition ${isActive ? 'border border-emerald-500/40 bg-emerald-500/13 text-emerald-200' : 'text-[#8fb29d] hover:bg-[#0b1710] hover:text-emerald-100'}`}
+                title={collapsed?`${item.label} · ${item.english}`:undefined}
+                className={({ isActive }) => `flex items-center justify-between rounded-2xl px-3 py-3 text-sm transition ${collapsed?'lg:justify-center':''} ${isActive ? 'border border-emerald-500/40 bg-emerald-500/13 text-emerald-200' : 'text-[#8fb29d] hover:bg-[#0b1710] hover:text-emerald-100'}`}
                 onClick={() => setMobileOpen(false)}
               >
                 <span className="flex items-center gap-3">
                   <NavIcon/>
-                  <span><span className="block">{item.label}</span><span className="block text-[10px] text-emerald-700">{item.english}</span></span>
+                  <span className={collapsed?'lg:hidden':''}><span className="block">{item.label}</span><span className="block text-[10px] text-emerald-700">{item.english}</span></span>
                 </span>
-                <span className="text-xs text-emerald-500">↗</span>
+                <span className={`text-xs text-emerald-500 ${collapsed?'lg:hidden':''}`}>↗</span>
               </NavLink>
             ))}
           </nav>
 
-          <div className="space-y-3 rounded-2xl border border-emerald-900/60 bg-[#07120d] p-3">
+          <div className={`space-y-3 rounded-2xl border border-emerald-900/60 bg-[#07120d] p-3 ${collapsed?'lg:hidden':''}`}>
             <div className="rounded-xl border border-emerald-900/60 bg-[#09170f] p-3">
               <p className="text-xs text-emerald-600">حالة الموجه</p>
               <p className="mt-1 text-sm font-semibold text-emerald-200">{diagnostics.loading?'Loading…':diagnostics.data?.authenticationVerified?'Authenticated':diagnostics.data?.safeReason??'Not authenticated'}</p>
