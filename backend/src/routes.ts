@@ -3,10 +3,15 @@ import { PollingService } from './polling.js';
 import { getRouterRuntimeConfig } from './config.js';
 import type { Response } from 'express';
 import { createCapabilities } from './capabilities.js';
+import type {RouterDatabase} from './storage.js';
 
-export const createRouterApi=(service:PollingService)=>{const router=Router(),config=getRouterRuntimeConfig(); const snapshot=(_req:unknown,res:Response)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s)};
+export const createRouterApi=(service:PollingService,database:RouterDatabase)=>{const router=Router(),config=getRouterRuntimeConfig(); const snapshot=(_req:unknown,res:Response)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s)};
  router.get('/api/v1/router/snapshot',snapshot);router.get('/api/router/snapshot',snapshot);
- for(const [path,key] of [['device-info','deviceInfo'],['health','health'],['wan','wan'],['wifi','wifi'],['devices','devices'],['security','security']] as const)router.get(`/api/v1/router/${path}`,(_q,res)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s[key])});
+ for(const [path,key] of [['device-info','deviceInfo'],['health','health'],['wan','wan'],['wifi','wifi'],['security','security']] as const)router.get(`/api/v1/router/${path}`,(_q,res)=>{const s=service.getSnapshot();if(!s)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(s[key])});
+ router.get('/api/v1/router/devices',async(_q,res)=>{const inventory=await service.getInventory();if(!inventory)return res.status(503).json({supported:false,reason:'No verified router snapshot available'});res.json(inventory)});
+ router.get('/api/v1/router/devices/:mac/timeline',async(req,res)=>res.json(await database.timeline(req.params.mac.toUpperCase())));
+ router.patch('/api/v1/router/devices/:mac/metadata',async(req,res)=>res.json(await database.updateMetadata(req.params.mac.toUpperCase(),req.body as {friendlyName?:string|null;owner?:string|null;notes?:string|null;location?:string|null;favorite?:boolean;tags?:string[]})));
+ router.get('/api/v1/router/geo',(_q,res)=>res.status(501).json({supported:false,reason:'Not exposed by current firmware',locationSource:'Unknown'}));
  router.post('/api/v1/router/auth',async(req,res)=>{const {username,password}=req.body as {username?:string,password?:string};if(!username||!password)return res.status(400).json({status:'failed',reason:'Username and password required'});try{await service.start(username,password);res.json({status:'connected',reason:null})}catch(e){const m=e instanceof Error?e.message:'Authentication failed';res.status(/protocol/i.test(m)?409:401).json({status:/protocol/i.test(m)?'protocol-mismatch':'failed',reason:m})}});
  router.post('/api/v1/router/refresh',async(_q,res)=>{try{res.json(await service.refresh())}catch(e){res.status(503).json({reason:e instanceof Error?e.message:'Refresh failed'})}});
  router.post('/api/v1/router/logout',(_q,res)=>{service.stop();res.json({status:'disconnected'})});

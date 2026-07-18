@@ -36,11 +36,10 @@ app.get('/api/version', (_req, res) => {
   res.json(response);
 });
 
-const pollingService = new PollingService();
-app.use(createRouterApi(pollingService));
-
 const db = createDatabase();
 void db.init();
+const pollingService = new PollingService(undefined,db);
+app.use(createRouterApi(pollingService,db));
 
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 attachWebsocket(wss, pollingService);

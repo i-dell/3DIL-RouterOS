@@ -1,36 +1,14 @@
-import sqlite3 from 'sqlite3';
-
-export interface StoredAuth { username: string; password: string; }
-
-export const createDatabase = () => {
-  const db = new sqlite3.Database(':memory:');
-
-  const init = async () => {
-    await new Promise<void>((resolve, reject) => {
-      db.run(
-        'CREATE TABLE IF NOT EXISTS auth_sessions (username TEXT NOT NULL, password TEXT NOT NULL)',
-        (err) => (err ? reject(err) : resolve()),
-      );
-    });
-  };
-
-  const saveAuth = async (auth: StoredAuth) => {
-    await new Promise<void>((resolve, reject) => {
-      db.run('INSERT INTO auth_sessions (username, password) VALUES (?, ?)', [auth.username, auth.password], (err) => (err ? reject(err) : resolve()));
-    });
-  };
-
-  const listAuth = async () => {
-    return new Promise<StoredAuth[]>((resolve, reject) => {
-      db.all('SELECT username, password FROM auth_sessions', (err, rows) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(rows as StoredAuth[]);
-      });
-    });
-  };
-
-  return { init, saveAuth, listAuth };
-};
+import sqlite3 from 'sqlite3';import {mkdirSync} from 'node:fs';import {dirname,resolve} from 'node:path';import type {DeviceSnapshot} from './types.js';import type {DeviceMetadata} from './device-intelligence.js';
+export interface StoredAuth{username:string;password:string}
+type Row=Record<string,unknown>;
+export const createDatabase=(filename=process.env.ROUTEROS_DB_PATH??resolve('data/adil-routeros.sqlite'))=>{if(filename!==':memory:')mkdirSync(dirname(filename),{recursive:true});const db=new sqlite3.Database(filename);const run=(sql:string,params:unknown[]=[])=>new Promise<{lastID:number;changes:number}>((ok,fail)=>db.run(sql,params,function(err){if(err){fail(err);return}ok({lastID:this.lastID,changes:this.changes})}));const all=<T>(sql:string,params:unknown[]=[])=>new Promise<T[]>((ok,fail)=>db.all(sql,params,(err,rows)=>{if(err){fail(err);return}ok(rows as T[])}));const get=<T>(sql:string,params:unknown[]=[])=>new Promise<T|undefined>((ok,fail)=>db.get(sql,params,(err,row)=>{if(err){fail(err);return}ok(row as T|undefined)}));
+ const init=async()=>{for(const sql of [`CREATE TABLE IF NOT EXISTS auth_sessions(username TEXT NOT NULL,password TEXT NOT NULL)`,`CREATE TABLE IF NOT EXISTS devices(mac TEXT PRIMARY KEY,hostname TEXT,alias TEXT,ipv4 TEXT,ipv6 TEXT,connection_type TEXT,band TEXT,first_seen TEXT NOT NULL,last_seen TEXT NOT NULL,online INTEGER,online_count INTEGER DEFAULT 0,offline_count INTEGER DEFAULT 0,longest_session INTEGER,session_total INTEGER DEFAULT 0,session_count INTEGER DEFAULT 0)`,`CREATE TABLE IF NOT EXISTS device_history(id INTEGER PRIMARY KEY AUTOINCREMENT,mac TEXT NOT NULL,at TEXT NOT NULL,event TEXT NOT NULL,previous_value TEXT,current_value TEXT)`,`CREATE TABLE IF NOT EXISTS device_notes(mac TEXT PRIMARY KEY,notes TEXT)`,`CREATE TABLE IF NOT EXISTS device_tags(mac TEXT NOT NULL,tag TEXT NOT NULL,PRIMARY KEY(mac,tag))`,`CREATE TABLE IF NOT EXISTS device_events(id INTEGER PRIMARY KEY AUTOINCREMENT,mac TEXT NOT NULL,at TEXT NOT NULL,event TEXT NOT NULL,details TEXT)`,`CREATE TABLE IF NOT EXISTS device_owner(mac TEXT PRIMARY KEY,owner TEXT)`,`CREATE TABLE IF NOT EXISTS favorites(mac TEXT PRIMARY KEY,favorite INTEGER NOT NULL DEFAULT 1)`,`CREATE TABLE IF NOT EXISTS device_metadata(mac TEXT PRIMARY KEY,friendly_name TEXT,location TEXT,blocked INTEGER DEFAULT 0,whitelisted INTEGER DEFAULT 0)`])await run(sql)};
+ const saveAuth=(auth:StoredAuth)=>run('INSERT INTO auth_sessions(username,password) VALUES(?,?)',[auth.username,auth.password]).then(()=>undefined);const listAuth=()=>all<StoredAuth>('SELECT username,password FROM auth_sessions');
+ const recordDevices=async(items:DeviceSnapshot[],at:string)=>{const seen=new Set<string>();const events:Array<{event:string;deviceId:string;changes?:string[]}>=[];for(const d of items){const mac=d.mac?.toUpperCase();if(!mac)continue;seen.add(mac);const old=await get<Row>('SELECT * FROM devices WHERE mac=?',[mac]);if(!old){await run('INSERT INTO devices(mac,hostname,alias,ipv4,ipv6,connection_type,band,first_seen,last_seen,online,online_count,longest_session,session_total,session_count) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',[mac,d.hostname,d.alias,d.ipv4,d.ipv6,d.connectionType,d.wifiBand,at,at,d.online===false?0:1,d.online===false?0:1,d.connectionDuration,d.connectionDuration??0,d.connectionDuration==null?0:1]);await addEvent(mac,'Connected',null,at);events.push({event:'device-connected',deviceId:mac});continue}const changes:Array<[string,unknown,unknown,string]>= [['ipv4',old.ipv4,d.ipv4,'IP Changed'],['hostname',old.hostname,d.hostname,'Hostname Changed'],['band',old.band,d.wifiBand,'Connection Changed']];for(const [field,before,after,event] of changes)if(before!==after&&after!=null){await run(`UPDATE devices SET ${field}=? WHERE mac=?`,[after,mac]);await addHistory(mac,event,before,after,at);events.push({event:event==='IP Changed'?'device-ip-changed':event==='Hostname Changed'?'device-hostname-changed':'device-roamed',deviceId:mac,changes:[field]})}const wasOnline=Number(old.online)===1,isOnline=d.online!==false;if(!wasOnline&&isOnline){await addEvent(mac,'Connected',null,at);events.push({event:'device-connected',deviceId:mac})}await run('UPDATE devices SET alias=?,ipv6=?,connection_type=?,band=?,last_seen=?,online=?,online_count=online_count+?,offline_count=offline_count+?,longest_session=CASE WHEN ? IS NOT NULL AND (longest_session IS NULL OR ?>longest_session) THEN ? ELSE longest_session END,session_total=session_total+?,session_count=session_count+? WHERE mac=?',[d.alias,d.ipv6,d.connectionType,d.wifiBand,at,isOnline?1:0,!wasOnline&&isOnline?1:0,wasOnline&&!isOnline?1:0,d.connectionDuration,d.connectionDuration,d.connectionDuration,d.connectionDuration??0,d.connectionDuration==null?0:1,mac])}const existing=await all<{mac:string}>('SELECT mac FROM devices WHERE online=1');for(const row of existing)if(!seen.has(row.mac)){await run('UPDATE devices SET online=0,offline_count=offline_count+1 WHERE mac=?',[row.mac]);await addEvent(row.mac,'Disconnected',null,at);events.push({event:'device-disconnected',deviceId:row.mac})}return events};
+ const addHistory=(mac:string,event:string,before:unknown,after:unknown,at=new Date().toISOString())=>run('INSERT INTO device_history(mac,at,event,previous_value,current_value) VALUES(?,?,?,?,?)',[mac,at,event,before==null?null:String(before),after==null?null:String(after)]).then(()=>undefined);const addEvent=(mac:string,event:string,details:string|null,at=new Date().toISOString())=>run('INSERT INTO device_events(mac,at,event,details) VALUES(?,?,?,?)',[mac,at,event,details]).then(()=>undefined);
+ const metadata=async(mac:string):Promise<DeviceMetadata>=>{const [m,owner,note,favorite,tags]=await Promise.all([get<Row>('SELECT * FROM device_metadata WHERE mac=?',[mac]),get<Row>('SELECT owner FROM device_owner WHERE mac=?',[mac]),get<Row>('SELECT notes FROM device_notes WHERE mac=?',[mac]),get<Row>('SELECT favorite FROM favorites WHERE mac=?',[mac]),all<{tag:string}>('SELECT tag FROM device_tags WHERE mac=? ORDER BY tag',[mac])]);return{friendlyName:(m?.friendly_name as string|null)??null,location:(m?.location as string|null)??null,blocked:Number(m?.blocked)===1,whitelisted:Number(m?.whitelisted)===1,owner:(owner?.owner as string|null)??null,notes:(note?.notes as string|null)??null,favorite:Number(favorite?.favorite)===1,tags:tags.map(x=>x.tag)}};
+ const history=async(mac:string)=>{const d=await get<Row>('SELECT * FROM devices WHERE mac=?',[mac]);return{firstSeen:String(d?.first_seen??new Date().toISOString()),lastSeen:String(d?.last_seen??new Date().toISOString()),onlineCount:Number(d?.online_count??0),offlineCount:Number(d?.offline_count??0),longestSession:d?.longest_session==null?null:Number(d.longest_session),averageSession:Number(d?.session_count??0)?Math.round(Number(d?.session_total??0)/Number(d?.session_count)):null}};
+ const timeline=(mac:string)=>all<Row>('SELECT id,at,event,previous_value AS previousValue,current_value AS currentValue FROM device_history WHERE mac=? UNION ALL SELECT id,at,event,NULL,NULL FROM device_events WHERE mac=? ORDER BY at DESC LIMIT 200',[mac,mac]);
+ const updateMetadata=async(mac:string,input:{friendlyName?:string|null;owner?:string|null;notes?:string|null;location?:string|null;favorite?:boolean;tags?:string[]})=>{await run('INSERT INTO device_metadata(mac,friendly_name,location) VALUES(?,?,?) ON CONFLICT(mac) DO UPDATE SET friendly_name=COALESCE(excluded.friendly_name,friendly_name),location=COALESCE(excluded.location,location)',[mac,input.friendlyName??null,input.location??null]);if(input.owner!==undefined)await run('INSERT INTO device_owner(mac,owner) VALUES(?,?) ON CONFLICT(mac) DO UPDATE SET owner=excluded.owner',[mac,input.owner]);if(input.notes!==undefined)await run('INSERT INTO device_notes(mac,notes) VALUES(?,?) ON CONFLICT(mac) DO UPDATE SET notes=excluded.notes',[mac,input.notes]);if(input.favorite!==undefined)await run('INSERT INTO favorites(mac,favorite) VALUES(?,?) ON CONFLICT(mac) DO UPDATE SET favorite=excluded.favorite',[mac,input.favorite?1:0]);if(input.tags){await run('DELETE FROM device_tags WHERE mac=?',[mac]);for(const tag of input.tags.filter(Boolean))await run('INSERT OR IGNORE INTO device_tags(mac,tag) VALUES(?,?)',[mac,tag])}await addEvent(mac,'Metadata Updated',null);return metadata(mac)};
+ return{init,saveAuth,listAuth,recordDevices,metadata,history,timeline,updateMetadata,close:()=>new Promise<void>((ok,fail)=>db.close(err=>err?fail(err):ok()))};};
+export type RouterDatabase=ReturnType<typeof createDatabase>;

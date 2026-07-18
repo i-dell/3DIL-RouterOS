@@ -17,6 +17,7 @@ export const attachWebsocket = (wss: WebSocketServer, pollingService: PollingSer
     const deviceDisconnectedListener = (snapshot: RouterSnapshot, deviceId: string) => {
       socket.send(JSON.stringify({ event: 'device-disconnected', payload: { snapshot, deviceId } }));
     };
+    const intelligenceListener=(payload:unknown)=>socket.send(JSON.stringify({event:'device-updated',payload}));
 
     const errorListener = (error: Error) => {
       socket.send(JSON.stringify({ event: 'error', payload: { message: 'Router polling failed', category: /session/i.test(error.message) ? 'session' : 'connectivity' } }));
@@ -25,12 +26,14 @@ export const attachWebsocket = (wss: WebSocketServer, pollingService: PollingSer
     pollingService.on('snapshot', snapshotListener);
     pollingService.on('deviceConnected', deviceConnectedListener);
     pollingService.on('deviceDisconnected', deviceDisconnectedListener);
+    for(const event of ['device-ip-changed','device-hostname-changed','device-roamed'])pollingService.on(event,intelligenceListener);
     pollingService.on('error', errorListener);
 
     socket.on('close', () => {
       pollingService.off('snapshot', snapshotListener);
       pollingService.off('deviceConnected', deviceConnectedListener);
       pollingService.off('deviceDisconnected', deviceDisconnectedListener);
+      for(const event of ['device-ip-changed','device-hostname-changed','device-roamed'])pollingService.off(event,intelligenceListener);
       pollingService.off('error', errorListener);
     });
   });
