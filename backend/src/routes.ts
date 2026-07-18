@@ -6,16 +6,7 @@ export const createRouterApi = (pollingService: PollingService) => {
   const router = Router();
   const config = getRouterRuntimeConfig();
 
-  router.get('/api/v1/router/connection', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ status: 'disconnected', reason: 'Connecting to local agent.' });
-      return;
-    }
-    res.json({ status: snapshot.connection.status, reason: snapshot.connection.reason });
-  });
-
-  router.get('/api/v1/router/device-info', (_req, res) => {
+  router.get('/api/router/info', (_req, res) => {
     const snapshot = pollingService.getSnapshot();
     if (!snapshot) {
       res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
@@ -24,7 +15,7 @@ export const createRouterApi = (pollingService: PollingService) => {
     res.json(snapshot.deviceInfo);
   });
 
-  router.get('/api/v1/router/health', (_req, res) => {
+  router.get('/api/router/health', (_req, res) => {
     const snapshot = pollingService.getSnapshot();
     if (!snapshot) {
       res.status(503).json({ status: 'unknown', reason: 'Connecting to local agent.' });
@@ -33,25 +24,7 @@ export const createRouterApi = (pollingService: PollingService) => {
     res.json(snapshot.health);
   });
 
-  router.get('/api/v1/router/wan', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
-      return;
-    }
-    res.json(snapshot.wan);
-  });
-
-  router.get('/api/v1/router/wifi', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
-      return;
-    }
-    res.json(snapshot.wifi);
-  });
-
-  router.get('/api/v1/router/devices', (_req, res) => {
+  router.get('/api/router/devices', (_req, res) => {
     const snapshot = pollingService.getSnapshot();
     if (!snapshot) {
       res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
@@ -60,7 +33,25 @@ export const createRouterApi = (pollingService: PollingService) => {
     res.json(snapshot.devices);
   });
 
-  router.get('/api/v1/router/snapshot', (_req, res) => {
+  router.get('/api/router/wan', (_req, res) => {
+    const snapshot = pollingService.getSnapshot();
+    if (!snapshot) {
+      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+      return;
+    }
+    res.json(snapshot.wan);
+  });
+
+  router.get('/api/router/wifi', (_req, res) => {
+    const snapshot = pollingService.getSnapshot();
+    if (!snapshot) {
+      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+      return;
+    }
+    res.json(snapshot.wifi);
+  });
+
+  router.get('/api/router/snapshot', (_req, res) => {
     const snapshot = pollingService.getSnapshot();
     if (!snapshot) {
       res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });

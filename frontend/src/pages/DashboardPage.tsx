@@ -43,6 +43,17 @@ interface LiveSnapshotResponse {
   };
 }
 
+const formatStatus = (value: string | null | undefined) => {
+  if (!value) return 'Unsupported';
+  if (value === 'connected') return 'Connected';
+  if (value === 'disconnected') return 'Disconnected';
+  if (value === 'authenticating') return 'Authentication Failed';
+  if (value === 'expired') return 'Session Expired';
+  if (value === 'failed') return 'Authentication Failed';
+  if (value === 'unsupported') return 'Unsupported';
+  return value;
+};
+
 export const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,23 +62,26 @@ export const DashboardPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await axios.get<LiveSnapshotResponse>('/api/v1/router/snapshot');
+        const response = await axios.get<LiveSnapshotResponse>('/api/router/snapshot');
         const data = response.data;
+        const authStatus = data.authentication?.status ?? 'unsupported';
+        const isUnavailable = authStatus === 'failed' || authStatus === 'expired' || authStatus === 'unsupported';
+
         setSnapshot({
           hero: {
             model: data.deviceInfo?.model ?? null,
             firmware: data.deviceInfo?.firmware ?? null,
             isp: data.deviceInfo?.isp ?? null,
-            status: data.health?.status ?? null,
-            connection: data.connection?.status ?? null,
+            status: formatStatus(data.health?.status ?? authStatus),
+            connection: formatStatus(data.connection?.status ?? authStatus),
             download: data.wan?.downloadMbps != null ? `${data.wan.downloadMbps} Mbps` : null,
             upload: data.wan?.uploadMbps != null ? `${data.wan.uploadMbps} Mbps` : null,
           },
           metrics: [
-            { id: 'cpu', label: 'استخدام المعالج', value: data.health?.cpuUsage != null ? `${data.health.cpuUsage}%` : null, status: data.health?.status ?? null, progress: data.health?.cpuUsage ?? null },
-            { id: 'memory', label: 'استخدام الذاكرة', value: data.health?.memoryUsage != null ? `${data.health.memoryUsage}%` : null, status: data.health?.status ?? null, progress: data.health?.memoryUsage ?? null },
-            { id: 'devices', label: 'عدد الأجهزة', value: data.devices?.length != null ? `${data.devices.length}` : null, status: data.authentication?.status ?? null },
-            { id: 'latency', label: 'الزمن', value: data.health?.latencyMs != null ? `${data.health.latencyMs} ms` : null, status: data.connection?.status ?? null },
+            { id: 'cpu', label: 'استخدام المعالج', value: data.health?.cpuUsage != null ? `${data.health.cpuUsage}%` : null, status: isUnavailable ? formatStatus(authStatus) : formatStatus(data.health?.status ?? 'connected'), progress: data.health?.cpuUsage ?? null },
+            { id: 'memory', label: 'استخدام الذاكرة', value: data.health?.memoryUsage != null ? `${data.health.memoryUsage}%` : null, status: isUnavailable ? formatStatus(authStatus) : formatStatus(data.health?.status ?? 'connected'), progress: data.health?.memoryUsage ?? null },
+            { id: 'devices', label: 'عدد الأجهزة', value: data.devices?.length != null ? `${data.devices.length}` : null, status: formatStatus(authStatus), progress: undefined },
+            { id: 'latency', label: 'الزمن', value: data.health?.latencyMs != null ? `${data.health.latencyMs} ms` : null, status: formatStatus(data.connection?.status ?? authStatus), progress: undefined },
           ],
           devices: data.devices.map((device, index) => ({
             id: device.mac ?? `${index}`,
@@ -80,9 +94,9 @@ export const DashboardPage = () => {
             actionLabel: 'حظر',
           })),
           activities: [
-            { id: 'connect', title: 'تحديث الحالة', detail: data.connection?.reason ?? 'في انتظار البيانات من الموجه', when: 'الآن' },
-            { id: 'wan', title: 'WAN', detail: data.wan?.state ?? 'غير متوفر', when: 'الآن' },
-            { id: 'wifi', title: 'Wi-Fi', detail: data.wifi?.ssid ?? 'غير متوفر', when: 'الآن' },
+            { id: 'connect', title: 'تحديث الحالة', detail: data.connection?.reason ?? data.authentication?.reason ?? 'في انتظار البيانات من الموجه', when: 'الآن' },
+            { id: 'wan', title: 'WAN', detail: data.wan?.state ?? 'Unsupported', when: 'الآن' },
+            { id: 'wifi', title: 'Wi-Fi', detail: data.wifi?.ssid ?? 'Unsupported', when: 'الآن' },
           ],
           quickActions: [
             { id: 'restart', title: 'إعادة تشغيل الموجه', description: 'متاح عند الاتصال' },
@@ -121,7 +135,7 @@ export const DashboardPage = () => {
 
         <div className="grid gap-4 xl:grid-cols-4">
           {snapshot.metrics.map((metric: (typeof snapshot.metrics)[number]) => (
-            <MetricCard key={metric.id} label={metric.label} value={metric.value ?? 'غير متوفر'} status={metric.status ?? 'غير متوفر'} progress={metric.progress ?? undefined} />
+            <MetricCard key={metric.id} label={metric.label} value={metric.value ?? 'Unsupported'} status={metric.status ?? 'Unsupported'} progress={metric.progress ?? undefined} />
           ))}
         </div>
 
