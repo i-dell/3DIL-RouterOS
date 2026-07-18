@@ -11,7 +11,7 @@
     "typecheck": "npm --prefix ../shared run build && tsc --noEmit"
   },
   "dependencies": {
-    "@3dil-routeros/shared": "^2.0.0-alpha.1",
+    "@3dil-routeros/shared": "^2.0.0-alpha.3",
     "axios": "^1.9.0",
     "framer-motion": "^12.42.2",
     "react": "^19.1.0",

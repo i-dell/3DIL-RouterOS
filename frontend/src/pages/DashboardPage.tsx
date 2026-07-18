@@ -47,7 +47,7 @@ const formatStatus = (value: string | null | undefined) => {
   if (!value) return 'Unsupported';
   if (value === 'connected') return 'Connected';
   if (value === 'disconnected') return 'Disconnected';
-  if (value === 'authenticating') return 'Authentication Failed';
+  if (value === 'authenticating') return 'Authenticating';
   if (value === 'expired') return 'Session Expired';
   if (value === 'failed') return 'Authentication Failed';
   if (value === 'unsupported') return 'Unsupported';
@@ -62,7 +62,7 @@ export const DashboardPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await axios.get<LiveSnapshotResponse>('/api/router/snapshot');
+        const response = await axios.get<LiveSnapshotResponse>('/api/v1/router/snapshot');
         const data = response.data;
         const authStatus = data.authentication?.status ?? 'unsupported';
         const isUnavailable = authStatus === 'failed' || authStatus === 'expired' || authStatus === 'unsupported';

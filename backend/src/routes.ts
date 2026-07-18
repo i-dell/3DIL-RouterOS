@@ -6,58 +6,134 @@ export const createRouterApi = (pollingService: PollingService) => {
   const router = Router();
   const config = getRouterRuntimeConfig();
 
-  router.get('/api/router/info', (_req, res) => {
+  const requireSnapshot = () => {
     const snapshot = pollingService.getSnapshot();
     if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+      return {
+        ok: false as const,
+        code: 503,
+        payload: { supported: false, reason: 'Connecting to local agent.' },
+      };
+    }
+
+    return { ok: true as const, snapshot };
+  };
+
+  router.get('/api/router/info', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
       return;
     }
-    res.json(snapshot.deviceInfo);
+    res.json(current.snapshot.deviceInfo);
   });
 
   router.get('/api/router/health', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ status: 'unknown', reason: 'Connecting to local agent.' });
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json({ status: 'unknown', reason: current.payload.reason });
       return;
     }
-    res.json(snapshot.health);
+    res.json(current.snapshot.health);
   });
 
   router.get('/api/router/devices', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
       return;
     }
-    res.json(snapshot.devices);
+    res.json(current.snapshot.devices);
   });
 
   router.get('/api/router/wan', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
       return;
     }
-    res.json(snapshot.wan);
+    res.json(current.snapshot.wan);
   });
 
   router.get('/api/router/wifi', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
       return;
     }
-    res.json(snapshot.wifi);
+    res.json(current.snapshot.wifi);
   });
 
   router.get('/api/router/snapshot', (_req, res) => {
-    const snapshot = pollingService.getSnapshot();
-    if (!snapshot) {
-      res.status(503).json({ supported: false, reason: 'Connecting to local agent.' });
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
       return;
     }
-    res.json(snapshot);
+    res.json(current.snapshot);
+  });
+
+  router.get('/api/v1/router/connection', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json({ status: 'unknown', reason: current.payload.reason });
+      return;
+    }
+    res.json(current.snapshot.connection);
+  });
+
+  router.get('/api/v1/router/device-info', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
+      return;
+    }
+    res.json(current.snapshot.deviceInfo);
+  });
+
+  router.get('/api/v1/router/health', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json({ status: 'unknown', reason: current.payload.reason });
+      return;
+    }
+    res.json(current.snapshot.health);
+  });
+
+  router.get('/api/v1/router/wan', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
+      return;
+    }
+    res.json(current.snapshot.wan);
+  });
+
+  router.get('/api/v1/router/wifi', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
+      return;
+    }
+    res.json(current.snapshot.wifi);
+  });
+
+  router.get('/api/v1/router/devices', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
+      return;
+    }
+    res.json(current.snapshot.devices);
+  });
+
+  router.get('/api/v1/router/snapshot', (_req, res) => {
+    const current = requireSnapshot();
+    if (!current.ok) {
+      res.status(current.code).json(current.payload);
+      return;
+    }
+    res.json(current.snapshot);
   });
 
   router.post('/api/v1/router/auth', async (req, res) => {

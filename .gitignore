@@ -12,3 +12,13 @@ coverage/
 *.har
 private-har/
 .DS_Store
+
+# Private router captures
+private-har/
+*.har
+.env
+.env.*
+*.db
+*.sqlite
+node_modules/
+dist/

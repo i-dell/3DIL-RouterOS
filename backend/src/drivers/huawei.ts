@@ -36,51 +36,35 @@ class CookieJar {
 }
 
 class SessionManager {
-  private connected = false;
   private authenticated = false;
-  private authenticatedAt: string | null = null;
   private lastError: string | null = null;
   private authenticationStatus: RouterSnapshot['authentication']['status'] = 'connecting';
 
   reset(): void {
-    this.connected = false;
     this.authenticated = false;
-    this.authenticatedAt = null;
     this.lastError = null;
     this.authenticationStatus = 'connecting';
   }
 
-  markConnecting(reason: string | null = null): void {
-    this.connected = false;
+  markConnecting(): void {
     this.authenticated = false;
-    this.lastError = reason;
+    this.lastError = 'Connecting to router';
     this.authenticationStatus = 'authenticating';
   }
 
   markConnected(): void {
-    this.connected = true;
     this.authenticated = true;
-    this.authenticatedAt = new Date().toISOString();
     this.lastError = null;
     this.authenticationStatus = 'connected';
   }
 
   markFailed(reason: string): void {
-    this.connected = false;
     this.authenticated = false;
     this.lastError = reason;
     this.authenticationStatus = /expired|session/i.test(reason) ? 'expired' : 'failed';
   }
 
-  markUnsupported(reason: string): void {
-    this.connected = false;
-    this.authenticated = false;
-    this.lastError = reason;
-    this.authenticationStatus = 'unsupported';
-  }
-
   markExpired(reason: string): void {
-    this.connected = false;
     this.authenticated = false;
     this.lastError = reason;
     this.authenticationStatus = 'expired';
@@ -130,9 +114,10 @@ class RequestExecutor {
 
   async request(path: string, init?: RequestInitLike): Promise<SafeHttpResponse> {
     const url = new URL(path, this.config.baseUrl).toString();
-    const requestHeaders = new Headers(init?.headers);
-    requestHeaders.set('Accept', 'text/html,application/json,text/plain,*/*');
-    requestHeaders.set('User-Agent', 'Mozilla/5.0');
+    const requestHeaders = new Headers(init?.headers ?? {});
+    requestHeaders.set('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8');
+    requestHeaders.set('Accept-Language', 'en-US,en;q=0.9');
+    requestHeaders.set('User-Agent', 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36');
 
     const csrfToken = this.tokenManager.getCsrf();
     if (csrfToken) {
@@ -146,20 +131,15 @@ class RequestExecutor {
 
     try {
       const response = await fetch(url, {
-        ...init,
+        method: init?.method ?? 'GET',
+        body: init?.body ?? undefined,
         headers: requestHeaders,
+        redirect: 'manual',
         signal: AbortSignal.timeout(this.config.requestTimeoutMs),
       });
 
       const body = await response.text();
-      const setCookie = response.headers.getSetCookie?.() ?? [];
-      for (const cookie of setCookie) {
-        const [pair] = cookie.split(';');
-        const [name, ...rest] = pair.split('=');
-        if (name && rest.length > 0) {
-          this.cookieJar.set(name, rest.join('='));
-        }
-      }
+      this.storeCookies(response.headers);
 
       if (response.status === 401 || response.status === 403) {
         this.sessionManager.markExpired('Session expired');
@@ -175,19 +155,33 @@ class RequestExecutor {
         responseHeaders[key] = value;
       });
 
-      return {
-        status: response.status,
-        body,
-        headers: responseHeaders,
-      };
+      return { status: response.status, body, headers: responseHeaders };
     } catch (error) {
       if (error instanceof Error && /session expired/i.test(error.message)) {
         throw error;
       }
-      if (error instanceof Error && /network|fetch/i.test(error.message)) {
+      if (error instanceof Error && /network|fetch|timeout|aborted/i.test(error.message)) {
         this.sessionManager.markFailed('Router offline');
       }
       throw error;
+    }
+  }
+
+  private storeCookies(headers: Headers): void {
+    const rawCookieHeader = headers.get('set-cookie');
+    if (!rawCookieHeader) {
+      return;
+    }
+
+    for (const cookieChunk of rawCookieHeader.split(',')) {
+      const [pair] = cookieChunk.split(';');
+      if (!pair || !pair.includes('=')) {
+        continue;
+      }
+      const [name, ...rest] = pair.split('=');
+      if (name) {
+        this.cookieJar.set(name.trim(), rest.join('=').trim());
+      }
     }
   }
 }
@@ -202,32 +196,37 @@ class RouterSnapshotService {
     authenticationStatus: RouterSnapshot['authentication']['status'];
     reason: string | null;
   }): RouterSnapshot {
+    const wanSupported = this.hasAnyValue(raw.wanRaw);
+    const wifiSupported = this.hasAnyValue(raw.wifiRaw);
+    const deviceInfoSupported = this.hasAnyValue(raw.deviceInfoRaw);
+    const healthSupported = this.hasAnyValue(raw.healthRaw);
+
     return {
       timestamp: new Date().toISOString(),
       connection: {
         status: this.inferConnectionState(raw.wanRaw),
         reason: raw.reason ?? this.extractReason(raw.wanRaw),
-        wanIp: this.extractString(raw.wanRaw, ['wanIp', 'WANIP', 'ip']) ?? null,
+        wanIp: this.extractString(raw.wanRaw, ['wanIp', 'wanIP', 'ip', 'ipAddress']) ?? null,
         dns: this.extractStringArray(raw.wanRaw, ['dns', 'dnsServers']) ?? null,
-        uplink: this.extractString(raw.wanRaw, ['uplink', 'wanType']) ?? null,
+        uplink: this.extractString(raw.wanRaw, ['uplink', 'wanType', 'connectionType']) ?? null,
       },
       deviceInfo: {
-        model: this.extractString(raw.deviceInfoRaw, ['modelName', 'ModelName', 'deviceName']) ?? 'Huawei OptiXstar LG8245X6-10',
-        firmware: this.extractString(raw.deviceInfoRaw, ['firmwareVersion', 'FirmwareVersion', 'version']) ?? 'V500R022C10SPC272',
-        isp: this.extractString(raw.deviceInfoRaw, ['isp', 'ISP']) ?? 'Saudi Arabia Mobily',
-        uptimeSeconds: this.extractNumber(raw.deviceInfoRaw, ['uptime', 'uptimeSeconds']) ?? null,
+        model: this.extractString(raw.deviceInfoRaw, ['model', 'modelName', 'productName', 'deviceName']) ?? null,
+        firmware: this.extractString(raw.deviceInfoRaw, ['firmware', 'firmwareVersion', 'softwareVersion', 'version']) ?? null,
+        isp: this.extractString(raw.deviceInfoRaw, ['isp', 'provider', 'wanProvider']) ?? null,
+        uptimeSeconds: this.extractNumber(raw.deviceInfoRaw, ['uptime', 'uptimeSeconds', 'uptimeSecondsValue']) ?? null,
         serial: this.extractString(raw.deviceInfoRaw, ['serial', 'serialNumber']) ?? null,
       },
       health: {
-        cpuUsage: this.extractNumber(raw.healthRaw, ['cpuUsage', 'cpu']) ?? null,
-        memoryUsage: this.extractNumber(raw.healthRaw, ['memoryUsage', 'memory']) ?? null,
+        cpuUsage: this.extractNumber(raw.healthRaw, ['cpuUsage', 'cpu', 'cpuPercent']) ?? null,
+        memoryUsage: this.extractNumber(raw.healthRaw, ['memoryUsage', 'memory', 'ramUsage']) ?? null,
         temperatureC: this.extractNumber(raw.healthRaw, ['temperatureC', 'temperature']) ?? null,
-        latencyMs: this.extractNumber(raw.healthRaw, ['latency', 'latencyMs']) ?? null,
+        latencyMs: this.extractNumber(raw.healthRaw, ['latency', 'latencyMs', 'ping']) ?? null,
         status: this.inferHealthStatus(raw.healthRaw, raw.wanRaw),
         reason: this.extractReason(raw.healthRaw) ?? this.extractReason(raw.wanRaw),
       },
       wifi: {
-        ssid: this.extractString(raw.wifiRaw, ['ssid', 'wifiName']) ?? null,
+        ssid: this.extractString(raw.wifiRaw, ['ssid', 'wifiName', 'wirelessName']) ?? null,
         band: this.extractString(raw.wifiRaw, ['band', 'wifiBand']) ?? null,
         security: this.extractString(raw.wifiRaw, ['security', 'securityType']) ?? null,
         channel: this.extractNumber(raw.wifiRaw, ['channel']) ?? null,
@@ -236,10 +235,10 @@ class RouterSnapshotService {
       },
       wan: {
         state: this.extractString(raw.wanRaw, ['state', 'wanState', 'wanStatus']) ?? null,
-        uploadMbps: this.extractNumber(raw.wanRaw, ['uploadMbps', 'upload']) ?? null,
-        downloadMbps: this.extractNumber(raw.wanRaw, ['downloadMbps', 'download']) ?? null,
-        signalStrength: this.extractNumber(raw.wanRaw, ['signalStrength', 'rssi']) ?? null,
-        supported: true,
+        uploadMbps: this.extractNumber(raw.wanRaw, ['uploadMbps', 'upload', 'uploadSpeed']) ?? null,
+        downloadMbps: this.extractNumber(raw.wanRaw, ['downloadMbps', 'download', 'downloadSpeed']) ?? null,
+        signalStrength: this.extractNumber(raw.wanRaw, ['signalStrength', 'rssi', 'signal']) ?? null,
+        supported: wanSupported || wifiSupported || deviceInfoSupported || healthSupported,
         reason: raw.reason ?? null,
       },
       devices: this.extractDevices(raw.devicesRaw),
@@ -254,7 +253,7 @@ class RouterSnapshotService {
     return {
       timestamp: new Date().toISOString(),
       connection: {
-        status: 'disconnected',
+        status: 'unknown',
         reason,
         wanIp: null,
         dns: null,
@@ -300,26 +299,38 @@ class RouterSnapshotService {
   }
 
   private inferConnectionState(source: Record<string, unknown>): 'connected' | 'disconnected' | 'unknown' {
-    const state = this.extractString(source, ['state', 'wanState']);
-    if (state && /connected|up|online/i.test(state)) return 'connected';
-    if (state && /disconnected|down|offline/i.test(state)) return 'disconnected';
+    const state = this.extractString(source, ['state', 'wanState', 'wanStatus']);
+    if (state && /connected|up|online/i.test(state)) {
+      return 'connected';
+    }
+    if (state && /disconnected|down|offline/i.test(state)) {
+      return 'disconnected';
+    }
     return 'unknown';
   }
 
   private inferHealthStatus(healthSource: Record<string, unknown>, wanSource: Record<string, unknown>): 'ok' | 'degraded' | 'offline' | 'unknown' {
-    const wanState = this.extractString(wanSource, ['state', 'wanState']);
-    if (wanState && /disconnected|down|offline/i.test(wanState)) return 'offline';
-    const cpu = this.extractNumber(healthSource, ['cpuUsage', 'cpu']) ?? null;
-    const memory = this.extractNumber(healthSource, ['memoryUsage', 'memory']) ?? null;
-    if (cpu !== null && cpu > 85) return 'degraded';
-    if (memory !== null && memory > 85) return 'degraded';
+    const wanState = this.extractString(wanSource, ['state', 'wanState', 'wanStatus']);
+    if (wanState && /disconnected|down|offline/i.test(wanState)) {
+      return 'offline';
+    }
+    const cpu = this.extractNumber(healthSource, ['cpuUsage', 'cpu', 'cpuPercent']);
+    const memory = this.extractNumber(healthSource, ['memoryUsage', 'memory', 'ramUsage']);
+    if (cpu !== null && cpu > 85) {
+      return 'degraded';
+    }
+    if (memory !== null && memory > 85) {
+      return 'degraded';
+    }
     return 'ok';
   }
 
   private extractString(source: Record<string, unknown>, keys: string[]): string | null {
     for (const key of keys) {
       const value = source[key];
-      if (typeof value === 'string' && value.trim()) return value;
+      if (typeof value === 'string' && value.trim()) {
+        return value;
+      }
       if (value && typeof value === 'object' && 'value' in value && typeof (value as { value?: unknown }).value === 'string') {
         return (value as { value: string }).value;
       }
@@ -343,10 +354,14 @@ class RouterSnapshotService {
   private extractNumber(source: Record<string, unknown>, keys: string[]): number | null {
     for (const key of keys) {
       const value = source[key];
-      if (typeof value === 'number') return value;
+      if (typeof value === 'number') {
+        return value;
+      }
       if (typeof value === 'string') {
         const parsed = Number(value);
-        if (!Number.isNaN(parsed)) return parsed;
+        if (!Number.isNaN(parsed)) {
+          return parsed;
+        }
       }
     }
     return null;
@@ -355,11 +370,17 @@ class RouterSnapshotService {
   private extractBoolean(source: Record<string, unknown>, keys: string[]): boolean | null {
     for (const key of keys) {
       const value = source[key];
-      if (typeof value === 'boolean') return value;
+      if (typeof value === 'boolean') {
+        return value;
+      }
       if (typeof value === 'string') {
         const normalized = value.toLowerCase();
-        if (normalized === 'true') return true;
-        if (normalized === 'false') return false;
+        if (normalized === 'true') {
+          return true;
+        }
+        if (normalized === 'false') {
+          return false;
+        }
       }
     }
     return null;
@@ -368,20 +389,39 @@ class RouterSnapshotService {
   private extractDevices(source: Record<string, unknown>): DeviceSnapshot[] {
     const values = Array.isArray(source.devices) ? source.devices : Array.isArray(source.data) ? source.data : [];
     const devices = values.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null);
+
     return devices.map((entry) => ({
-      mac: this.extractString(entry, ['mac', 'macAddress']) ?? null,
-      name: this.extractString(entry, ['name', 'hostName', 'deviceName']) ?? null,
-      ip: this.extractString(entry, ['ip', 'ipAddress']) ?? null,
-      hostName: this.extractString(entry, ['hostName', 'hostname']) ?? null,
+      mac: this.extractString(entry, ['mac', 'macAddress', 'MacAddr']) ?? null,
+      name: this.extractString(entry, ['name', 'hostName', 'deviceName', 'UserDevAlias', 'HostName']) ?? null,
+      ip: this.extractString(entry, ['ip', 'ipAddress', 'IpAddr']) ?? null,
+      hostName: this.extractString(entry, ['hostName', 'hostname', 'HostName']) ?? null,
       signal: this.extractNumber(entry, ['signal', 'rssi']) ?? null,
-      band: this.extractString(entry, ['band', 'wifiBand']) ?? null,
-      online: this.extractBoolean(entry, ['online', 'connected']) ?? null,
+      band: this.extractString(entry, ['band', 'wifiBand', 'PortType']) ?? null,
+      online: this.extractBoolean(entry, ['online', 'connected', 'isOnline']) ?? null,
       raw: entry,
     }));
   }
 
   private extractReason(source: Record<string, unknown>): string | null {
     return this.extractString(source, ['reason', 'message', 'status']) ?? null;
+  }
+
+  private hasAnyValue(source: Record<string, unknown>): boolean {
+    return Object.values(source).some((value) => {
+      if (typeof value === 'string') {
+        return value.trim().length > 0;
+      }
+      if (typeof value === 'number') {
+        return Number.isFinite(value);
+      }
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>).length > 0;
+      }
+      return false;
+    });
   }
 }
 
@@ -392,12 +432,14 @@ export class HuaweiClient {
   private readonly tokenManager = new TokenManager();
   private readonly executor: RequestExecutor;
   private readonly snapshotService = new RouterSnapshotService();
+  private lastAuth: RouterAuth | null = null;
 
   constructor() {
     this.executor = new RequestExecutor(this.config, this.cookieJar, this.tokenManager, this.sessionManager);
   }
 
   async connect(auth: RouterAuth): Promise<void> {
+    this.lastAuth = auth;
     this.sessionManager.reset();
     this.cookieJar.clear();
     this.tokenManager.setCsrf(null);
@@ -421,23 +463,29 @@ export class HuaweiClient {
     this.cookieJar.clear();
     this.tokenManager.setCsrf(null);
     this.tokenManager.setRand(null);
+    this.lastAuth = null;
   }
 
   async getSnapshot(): Promise<RouterSnapshot> {
     if (!this.sessionManager.isAuthenticated()) {
-      return this.snapshotService.createFallbackSnapshot(
-        this.sessionManager.getAuthenticationStatus(),
-        this.sessionManager.getLastError(),
-      );
+      if (this.lastAuth) {
+        try {
+          await this.connect(this.lastAuth);
+        } catch {
+          return this.snapshotService.createFallbackSnapshot(this.sessionManager.getAuthenticationStatus(), this.sessionManager.getLastError());
+        }
+      } else {
+        return this.snapshotService.createFallbackSnapshot(this.sessionManager.getAuthenticationStatus(), this.sessionManager.getLastError());
+      }
     }
 
     try {
       const [deviceInfo, healthAttr, wanAttr, wifiAttr, devicesAttr] = await Promise.all([
-        this.safeRead('deviceinfo.asp'),
-        this.safeRead('getHomeNetdata.asp'),
-        this.safeRead('getWanDynamicData.asp'),
-        this.safeRead('WlanBasic.asp'),
-        this.safeRead('GetLanUserDevInfo.asp'),
+        this.safeRead('/html/bbsp/common/deviceinfo.asp'),
+        this.safeRead('/html/bbsp/common/getWanDynamicData.asp'),
+        this.safeRead('/html/bbsp/common/wanStateMonitor.asp'),
+        this.safeRead('/html/bbsp/common/WlanBasic.asp'),
+        this.safeRead('/html/bbsp/common/GetLanUserDevInfo.asp'),
       ]);
 
       const deviceInfoRaw = this.parseBodyToObject(deviceInfo.body);
@@ -468,34 +516,36 @@ export class HuaweiClient {
   }
 
   private async login(auth: RouterAuth): Promise<LoginResponse> {
-    this.sessionManager.markConnecting('Connecting to router');
+    this.sessionManager.markConnecting();
 
     try {
       await this.safeRequest('/');
+      await this.safeRequest('/asp/GetRandCount.asp', { method: 'GET' });
       const randToken = await this.fetchRandToken();
-      if (!randToken) {
-        return { success: false, reason: 'Router token unavailable' };
-      }
 
       const loginBody = new URLSearchParams({
-        username: auth.username,
-        password: auth.password,
-        frmLogin: 'Login',
-        randToken,
+        UserName: auth.username,
+        PassWord: auth.password,
+        Language: 'english',
       });
 
-      const response = await this.request('/html/login.asp', {
+      if (randToken) {
+        loginBody.set('x.X_HW_Token', randToken);
+      }
+
+      const response = await this.request('/login.cgi', {
         method: 'POST',
         body: loginBody.toString(),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-      const html = response.body;
-      const success = /login/.test(html.toLowerCase()) === false && /error/.test(html.toLowerCase()) === false;
-      if (!success) {
+
+      const normalized = response.body.toLowerCase();
+      const failure = /login failed|incorrect|invalid|error|unauthorized|fail/i.test(normalized);
+      if (failure) {
         return { success: false, reason: 'Authentication failed' };
       }
 
-      this.tokenManager.setCsrf(this.extractToken(html));
+      this.tokenManager.setCsrf(this.extractToken(response.body));
       return { success: true };
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Authentication failed';
@@ -505,26 +555,31 @@ export class HuaweiClient {
   }
 
   private async fetchRandToken(): Promise<string | null> {
-    const response = await this.request('/html/GetRandToken.asp', { method: 'GET' });
-    const body = response.body;
-    const match = body.match(/([A-Za-z0-9._-]{4,})/);
-    this.tokenManager.setRand(match?.[1] ?? null);
-    return match?.[1] ?? null;
+    try {
+      const response = await this.request('/html/ssmp/common/GetRandToken.asp', { method: 'GET' });
+      const body = response.body;
+      const match = body.match(/[A-Za-z0-9._-]{16,}/);
+      const token = match?.[0] ?? null;
+      this.tokenManager.setRand(token);
+      return token;
+    } catch {
+      return null;
+    }
   }
 
   private async safeRequest(path: string, init?: RequestInitLike): Promise<SafeHttpResponse> {
     try {
       return await this.request(path, init);
     } catch (error) {
-      if (error instanceof Error && /timeout|tempor/i.test(error.message)) {
+      if (error instanceof Error && /timeout|tempor|network|aborted/i.test(error.message)) {
         return { status: 504, body: '', headers: {} };
       }
       throw error;
     }
   }
 
-  private async safeRead(endpoint: string): Promise<SafeHttpResponse> {
-    return this.safeRequest(`/${endpoint}`);
+  private async safeRead(path: string): Promise<SafeHttpResponse> {
+    return this.safeRequest(path, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
   }
 
   private async request(path: string, init?: RequestInitLike): Promise<SafeHttpResponse> {
@@ -540,7 +595,12 @@ export class HuaweiClient {
       const parsed = JSON.parse(body);
       return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
     } catch {
-      return {};
+      const entries = new URLSearchParams(body.replace(/\r?\n/g, '&'));
+      const parsed: Record<string, unknown> = {};
+      entries.forEach((value, key) => {
+        parsed[key] = value;
+      });
+      return parsed;
     }
   }
 
