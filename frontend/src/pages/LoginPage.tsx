@@ -6,42 +6,96 @@ import { useNavigate } from 'react-router-dom';
 
 type LoginStatus = 'idle' | 'loading' | 'success' | 'authentication-failed' | 'router-offline' | 'backend-offline' | 'session-expired';
 
-const statusStyles: Record<LoginStatus, { badge: string; title: string; description: string }> = {
+type StatusTheme = {
+  badge: string;
+  title: string;
+  description: string;
+  accent: string;
+  ring: string;
+};
+
+const statusStyles: Record<LoginStatus, StatusTheme> = {
   idle: {
     badge: 'Router Detected',
     title: 'Connect Securely',
     description: 'Use your router credentials to access the local console.',
+    accent: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+    ring: 'from-emerald-500 to-emerald-700',
   },
   loading: {
-    badge: 'Connecting',
-    title: 'Establishing Session',
-    description: 'The local agent is validating the router connection.',
+    badge: 'Authenticating',
+    title: 'Establishing Secure Session',
+    description: 'The local agent is validating the router credentials.',
+    accent: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+    ring: 'from-amber-500 to-amber-700',
   },
   success: {
     badge: 'Connected',
     title: 'Secure Session Ready',
     description: 'The console is opening with live router insights.',
+    accent: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+    ring: 'from-emerald-500 to-emerald-700',
   },
   'authentication-failed': {
     badge: 'Authentication Failed',
-    title: 'Login Credentials Invalid',
+    title: 'Credentials Rejected',
     description: 'Verify the router username and password, then try again.',
+    accent: 'border-rose-500/30 bg-rose-500/10 text-rose-200',
+    ring: 'from-rose-500 to-rose-700',
   },
   'router-offline': {
     badge: 'Router Offline',
     title: 'Router Not Reachable',
     description: 'The router is not responding on the local network.',
+    accent: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+    ring: 'from-amber-500 to-amber-700',
   },
   'backend-offline': {
     badge: 'Backend Offline',
     title: 'Local Agent Unavailable',
     description: 'The local backend is currently unreachable.',
+    accent: 'border-sky-500/30 bg-sky-500/10 text-sky-200',
+    ring: 'from-sky-500 to-sky-700',
   },
   'session-expired': {
     badge: 'Session Expired',
     title: 'Session Needs Refresh',
     description: 'Please reconnect to continue using the console.',
+    accent: 'border-violet-500/30 bg-violet-500/10 text-violet-200',
+    ring: 'from-violet-500 to-violet-700',
   },
+};
+
+const statusIcon = (status: LoginStatus) => {
+  if (status === 'loading') {
+    return (
+      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="12 8" />
+      </svg>
+    );
+  }
+
+  if (status === 'success') {
+    return (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 12.5 10.5 17 18 8" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (status === 'authentication-failed' || status === 'router-offline' || status === 'backend-offline' || status === 'session-expired') {
+    return (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v6m0 6v6m-9-9h6m6 0h6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
 };
 
 export const LoginPage = () => {
@@ -58,19 +112,19 @@ export const LoginPage = () => {
 
     if (!username.trim() || !password.trim()) {
       setStatus('authentication-failed');
-      setMessage('Router Username and Router Password are required.');
+      setMessage('Router username and router password are required.');
       return;
     }
 
     setStatus('loading');
-    setMessage('Connecting to the local agent…');
+    setMessage('Authenticating with the router…');
 
     try {
       const response = await axios.post('/api/v1/router/auth', { username, password });
       if (response.status === 200 || response.data?.status === 'connected') {
         setStatus('success');
         setMessage('Connection established. Opening the dashboard…');
-        window.setTimeout(() => navigate('/dashboard'), 700);
+        window.setTimeout(() => navigate('/dashboard'), 800);
         return;
       }
 
@@ -110,10 +164,10 @@ export const LoginPage = () => {
           transition={{ duration: 0.4 }}
           className="rounded-[32px] border border-emerald-800/50 bg-[#07120d]/80 p-6 shadow-[0_18px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-8 lg:p-10"
         >
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-sm text-emerald-200">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${currentState.accent}`}>
+                <span className="h-2.5 w-2.5 rounded-full bg-current" />
                 {currentState.badge}
               </div>
 
@@ -128,13 +182,23 @@ export const LoginPage = () => {
               </div>
 
               <div className="rounded-[24px] border border-emerald-900/70 bg-[#07130d]/70 p-5">
-                <div className="flex items-center justify-between text-sm text-[#93ad98]">
+                <div className="flex items-center justify-between gap-4 text-sm text-[#93ad98]">
                   <span>Router Detected</span>
-                  <span className="text-emerald-300">Huawei OptiXstar LG8245X6-10</span>
+                  <span className="font-medium text-emerald-300">Huawei OptiXstar LG8245X6-10</span>
                 </div>
-                <div className="mt-4 flex items-center justify-between rounded-2xl border border-emerald-900/60 bg-[#08150e] px-4 py-3 text-sm">
-                  <span className="text-[#93ad98]">Router Address</span>
-                  <span className="font-semibold text-[#f5fff7]">192.168.1.1</span>
+                <div className="mt-4 grid gap-3 rounded-2xl border border-emerald-900/60 bg-[#08150e] p-4 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#93ad98]">Address</span>
+                    <span className="font-semibold text-[#f5fff7]">192.168.1.1</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#93ad98]">Firmware</span>
+                    <span className="font-semibold text-[#f5fff7]">V500R022C10SPC272</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#93ad98]">Status</span>
+                    <span className="font-semibold text-emerald-300">Router Detected</span>
+                  </div>
                 </div>
               </div>
 
@@ -162,9 +226,10 @@ export const LoginPage = () => {
                 <label className="block">
                   <span className="mb-2 block text-sm text-[#8ca78f]">Router Username</span>
                   <input
+                    type="text"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="w-full rounded-2xl border border-emerald-800/50 bg-[#07120d] px-4 py-3 text-sm text-[#f7fff8] outline-none ring-0 transition focus:border-emerald-500"
+                    className="w-full rounded-2xl border border-emerald-800/50 bg-[#07120d] px-4 py-3 text-sm text-[#f7fff8] outline-none transition focus:border-emerald-500"
                     autoComplete="username"
                     placeholder="admin"
                   />
@@ -181,7 +246,7 @@ export const LoginPage = () => {
                       autoComplete="current-password"
                       placeholder="••••••••"
                     />
-                    <button type="button" onClick={() => setShowPassword((value) => !value)} className="ml-3 text-sm text-emerald-300">
+                    <button type="button" onClick={() => setShowPassword((value) => !value)} className="ml-3 text-sm text-emerald-300 transition hover:text-emerald-200">
                       {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
@@ -193,13 +258,18 @@ export const LoginPage = () => {
                 </label>
               </div>
 
-              <button
+              <motion.button
                 type="submit"
                 disabled={status === 'loading'}
-                className="mt-6 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-700 px-4 py-3 font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: status === 'loading' ? 1 : 1.01 }}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-700 px-4 py-3 font-semibold text-black shadow-lg shadow-emerald-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {status === 'loading' ? 'Connecting…' : 'Connect Securely'}
-              </button>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
+                  {statusIcon(status)}
+                </span>
+                <span>{status === 'loading' ? 'Authenticating…' : 'Connect Securely'}</span>
+              </motion.button>
 
               <AnimatePresence mode="wait">
                 <motion.div
@@ -207,18 +277,18 @@ export const LoginPage = () => {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
-                  className="mt-4 rounded-2xl border border-emerald-900/60 bg-[#08140d] px-4 py-3 text-sm text-[#97aa95]"
+                  className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${status === 'authentication-failed' || status === 'router-offline' || status === 'backend-offline' || status === 'session-expired' ? 'border-rose-900/50 bg-rose-950/30 text-rose-100' : 'border-emerald-900/60 bg-[#08140d] text-[#97aa95]'}`}
                 >
                   {message}
                 </motion.div>
               </AnimatePresence>
 
               <div className="mt-6 border-t border-emerald-900/70 pt-4 text-center text-xs text-[#7d9580]">
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-wrap items-center justify-center gap-3">
                   <span>Huawei Driver</span>
                   <span>LG8245X6</span>
                   <span>Version</span>
-                  <span>v2.0.0-alpha.2</span>
+                  <span>v2.0.0-alpha.3</span>
                 </div>
               </div>
             </motion.form>
