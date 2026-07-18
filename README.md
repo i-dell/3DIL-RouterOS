@@ -2,4 +2,4 @@
 
 # Adil RouterOS
 
-Adil RouterOS v4.0.0 (Version 4) is a local Huawei router management platform.
+Adil RouterOS v2.0.0 is a local Huawei router management platform.

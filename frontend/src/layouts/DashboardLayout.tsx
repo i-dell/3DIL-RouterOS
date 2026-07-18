@@ -85,7 +85,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   ☰
                 </button>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v4.0.0 · Version 4</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">v2.0.0</p>
                   <h1 className="text-xl font-semibold text-[#f1fff4]">{current?.label??'Adil RouterOS'}</h1>
                   <p className="text-sm text-[#6e8772]">{diagnostics.data?.lastSuccessfulEndpoint??'Live local router console'}</p>
                 </div>
@@ -100,7 +100,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <main className="px-4 py-4 sm:px-6 lg:px-8">
             {children ?? <Outlet />}
           </main>
-          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v4.0.0 · Version 4</footer>
+          <footer className="border-t border-emerald-900/40 px-6 py-4 text-center text-xs text-emerald-700">Adil RouterOS v2.0.0</footer>
         </div>
       </div>
     </div>
