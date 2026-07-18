@@ -48,10 +48,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const logout = async () => { await axios.post('/api/v1/router/logout'); navigate('/login'); };
 
   return (
-    <div className="min-h-screen bg-[#040806] text-[#e8f7ed]" dir="rtl">
+    <div className="min-h-screen bg-[#040806] text-[#e8f7ed]" dir="ltr">
       <div className="flex min-h-screen flex-col lg:flex-row">
         {mobileOpen&&<button aria-label="إغلاق القائمة" onClick={()=>setMobileOpen(false)} className="fixed inset-0 z-20 bg-black/60 lg:hidden"/>}
-        <aside className={`fixed inset-y-0 right-0 z-30 border-l border-emerald-900/50 bg-[#050b08] p-3 shadow-[0_0_0_1px_rgba(16,185,129,0.1)] transition-all duration-300 lg:static lg:flex lg:flex-col ${collapsed?'lg:w-20':'lg:w-72'} ${mobileOpen ? 'w-72 translate-x-0' : 'w-72 translate-x-full lg:translate-x-0'}`}>
+        <aside dir="rtl" className={`fixed inset-y-0 left-0 z-30 border-r border-emerald-900/50 bg-gradient-to-b from-black to-[#050b08] p-3 shadow-[0_0_0_1px_rgba(16,185,129,0.1)] transition-all duration-300 lg:flex lg:flex-col ${collapsed?'lg:w-[72px]':'lg:w-[240px]'} ${mobileOpen ? 'w-[240px] translate-x-0' : 'w-[240px] -translate-x-full lg:translate-x-0'}`}>
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-[#07130d] px-3 py-3">
             <img src="/branding/logo-white.png" alt="Adil" className="h-11 w-24 object-contain" />
             <div className={collapsed?'lg:hidden':''}>
@@ -89,7 +89,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </aside>
 
-        <div className="flex-1 lg:mr-0">
+        <div dir="rtl" className={`min-w-0 flex-1 transition-[margin] duration-300 ${collapsed?'lg:ml-[72px]':'lg:ml-[240px]'}`}>
           <header className="border-b border-emerald-900/40 bg-[#050b08]/90 px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
