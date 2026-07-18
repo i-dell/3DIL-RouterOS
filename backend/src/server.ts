@@ -12,6 +12,7 @@ import { attachWebsocket } from './websocket.js';
 import {NetworkHistoryStore} from './network/history.js';
 import {SecurityStore} from './security/security-store.js';
 import {calculateSecurityScore} from './security/security-center.js';
+import {MonitoringStore} from './monitoring/store.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -44,7 +45,8 @@ void db.init();
 const pollingService = new PollingService(undefined,db);
 const networkHistory=new NetworkHistoryStore();void networkHistory.init();pollingService.on('snapshot',snapshot=>void networkHistory.record(snapshot));
 const securityStore=new SecurityStore();void securityStore.init();pollingService.on('snapshot',snapshot=>{const score=calculateSecurityScore(snapshot);void securityStore.recordScore(snapshot.timestamp,score.score,score.verifiedControls,score.confidence);pollingService.emit('security.score.updated',{score:score.score,verifiedControls:score.verifiedControls,confidence:score.confidence,timestamp:snapshot.timestamp})});
-app.use(createRouterApi(pollingService,db,networkHistory,securityStore));
+const monitoringStore=new MonitoringStore();void monitoringStore.init();pollingService.on('snapshot',snapshot=>{void monitoringStore.record(snapshot);pollingService.emit('monitoring.snapshot',{version:1,collectedAt:snapshot.timestamp})});
+app.use(createRouterApi(pollingService,db,networkHistory,securityStore,monitoringStore));
 
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 attachWebsocket(wss, pollingService);
