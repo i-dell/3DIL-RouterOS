@@ -1,29 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { DashboardLayout } from './layouts/DashboardLayout.js';
-import { DashboardPage } from './pages/DashboardPage.js';
-import { LoginPage } from './pages/LoginPage.js';
-import { DevicesPage } from './pages/DevicesPage.js';import { WifiPage } from './pages/WifiPage.js';import { WanPage } from './pages/WanPage.js';import { SecurityPage } from './pages/SecurityPage.js';import { SettingsPage } from './pages/SettingsPage.js';import { LogsPage } from './pages/LogsPage.js';
-import { AboutPage } from './pages/AboutPage.js';
-import { CapabilityPage, features } from './pages/CapabilityPage.js';
-
-const App = () => {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<DashboardLayout />}>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/devices" element={<DevicesPage />} />
-        <Route path="/wifi" element={<WifiPage />} />
-        <Route path="/wan" element={<WanPage />} />
-        <Route path="/security" element={<SecurityPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/logs" element={<LogsPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        {features.map(feature=><Route key={feature.path} path={feature.path} element={<CapabilityPage feature={feature}/>}/>)}
-      </Route>
-    </Routes>
-  );
-};
-
+import {lazy,Suspense} from 'react';
+import {Navigate,Route,Routes} from 'react-router-dom';
+import {DashboardLayout} from './layouts/DashboardLayout.js';
+import {State} from './pages/shared.js';
+import {CapabilityPage,features} from './pages/CapabilityPage.js';
+const DashboardPage=lazy(()=>import('./pages/DashboardPage.js').then(m=>({default:m.DashboardPage})));const LoginPage=lazy(()=>import('./pages/LoginPage.js').then(m=>({default:m.LoginPage})));const DevicesPage=lazy(()=>import('./pages/DevicesPage.js').then(m=>({default:m.DevicesPage})));const WifiPage=lazy(()=>import('./pages/WifiPage.js').then(m=>({default:m.WifiPage})));const WanPage=lazy(()=>import('./pages/WanPage.js').then(m=>({default:m.WanPage})));const SecurityPage=lazy(()=>import('./pages/SecurityPage.js').then(m=>({default:m.SecurityPage})));const SettingsPage=lazy(()=>import('./pages/SettingsPage.js').then(m=>({default:m.SettingsPage})));const LogsPage=lazy(()=>import('./pages/LogsPage.js').then(m=>({default:m.LogsPage})));const AboutPage=lazy(()=>import('./pages/AboutPage.js').then(m=>({default:m.AboutPage})));
+const App=()=> <Suspense fallback={<div className="p-6"><State loading error={null}/></div>}><Routes><Route path="/login" element={<LoginPage/>}/><Route element={<DashboardLayout/>}><Route path="/" element={<Navigate to="/login" replace/>}/><Route path="/dashboard" element={<DashboardPage/>}/><Route path="/devices" element={<DevicesPage/>}/><Route path="/wifi" element={<WifiPage/>}/><Route path="/wan" element={<WanPage/>}/><Route path="/security" element={<SecurityPage/>}/><Route path="/settings" element={<SettingsPage/>}/><Route path="/logs" element={<LogsPage/>}/><Route path="/about" element={<AboutPage/>}/>{features.map(feature=><Route key={feature.path} path={feature.path} element={<CapabilityPage feature={feature}/>}/>)}</Route></Routes></Suspense>;
 export default App;
