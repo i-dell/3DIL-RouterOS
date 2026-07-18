@@ -1,7 +1,7 @@
 {
   "name": "@3dil-routeros/frontend",
   "private": true,
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,8 @@
     "@3dil-routeros/shared": "^2.0.0-alpha.1",
     "axios": "^1.9.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",
