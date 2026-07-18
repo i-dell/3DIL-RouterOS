@@ -12,4 +12,14 @@ export const createRouterApi=(service:PollingService)=>{const router=Router(),co
  router.get('/api/v1/router/diagnostics',(_q,res)=>res.json(service.getDiagnostics()));router.get('/api/v1/router/capabilities',(_q,res)=>res.json(service.getCapabilities()));
  router.get('/api/v1/router/auth-diagnostics',(_q,res)=>res.json(service.getAuthDiagnostics()));
  router.get('/api/v1/router/config',(_q,res)=>res.json({routerAddress:config.baseUrl,pollingInterval:config.pollIntervalMs,backendVersion:'v2.0.0',sessionStatus:service.getDiagnostics().authenticationVerified?'verified':'not verified'}));
- router.get('/api/v1/router/logs',(_q,res)=>res.json([{timestamp:new Date().toISOString(),level:'info',message:'Safe event log active'}]));return router};
+ router.get('/api/v1/logs',(_q,res)=>res.json(service.getLogs()));
+ router.get('/api/v1/router/logs',(_q,res)=>res.json(service.getLogs()));
+ const unsupported=(_q:unknown,res:Response)=>res.status(501).json({supported:false,reason:'Not exposed by the current router firmware'});
+ router.post('/api/v1/router/devices/:mac/block',unsupported);
+ router.post('/api/v1/router/devices/:mac/unblock',unsupported);
+ router.put('/api/v1/router/wifi',unsupported);
+ router.post('/api/v1/router/reboot',unsupported);
+ router.post('/api/v1/router/port-mappings',unsupported);
+ router.put('/api/v1/router/port-mappings/:id',unsupported);
+ router.delete('/api/v1/router/port-mappings/:id',unsupported);
+ return router};
