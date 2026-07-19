@@ -9,6 +9,7 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+*.adilbackup
 *.har
 private-har/
 .DS_Store
